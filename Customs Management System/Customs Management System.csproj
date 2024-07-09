@@ -9,19 +9,23 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="DTOs\" />
-    <Folder Include="IRepository\" />
-    <Folder Include="DbContexts\" />
-    <Folder Include="DependencyContainer\" />
     <Folder Include="Middlewares\" />
     <Folder Include="SQL\" />
     <Folder Include="wwwroot\" />
-    <Folder Include="Repository\" />
   </ItemGroup>
 
 </Project>
