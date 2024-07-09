@@ -30,4 +30,4 @@ namespace Customs_Management_System.DTOs
         public virtual Declaration Declaration { get; set; } = null!;
     }
 }
-}
+

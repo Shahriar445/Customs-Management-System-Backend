@@ -1,4 +1,5 @@
 ﻿using Customs_Management_System.DbContexts;
+using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
 
 namespace Customs_Management_System.Repository
@@ -14,6 +15,9 @@ namespace Customs_Management_System.Repository
             _configuration = configuration;
         }
 
-
+        public Task<string> CreateDeclaration(DeclarationDto declarationDto)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
