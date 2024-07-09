@@ -9,13 +9,13 @@ namespace Customs_Management_System.Controllers
     public class CMSController : ControllerBase
     {
 
-        private static ICustomsRepository _customeRepo;
+        private static ICustomsRepository _customsRepo;
         private readonly ILogger<CMSController> _logger;
         
-        public CMSController(ILogger<CMSController> logger, ICustomsRepository customeRepo)
+        public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo)
         {
             _logger=logger;
-            _customeRepo=customeRepo;
+            _customsRepo=customsRepo;
         }
     }
 }

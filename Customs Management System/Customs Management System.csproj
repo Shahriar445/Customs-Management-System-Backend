@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\" />
     <Folder Include="Middlewares\" />
     <Folder Include="SQL\" />
     <Folder Include="wwwroot\" />
