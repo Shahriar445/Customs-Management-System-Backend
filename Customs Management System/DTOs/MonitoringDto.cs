@@ -9,9 +9,6 @@ namespace Customs_Management_System.DTOs
     {
       
 
-        public int DeclarationId { get; set; }
-
-       
         public string? MethodOfShipment { get; set; }
 
        
@@ -25,6 +22,11 @@ namespace Customs_Management_System.DTOs
         public DateTime? ArrivalDate { get; set; }
 
         public string? Status { get; set; }
+
+        
+       public ProductDto Product { get; set; } = null!;
+
+        public ShipmentDto Shipment { get; set; } = null!;
 
       
         public virtual DeclarationDto Declaration { get; set; } = null!;

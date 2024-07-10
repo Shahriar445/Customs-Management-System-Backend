@@ -34,8 +34,25 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
+        // GET: api/Monitoring
+        [HttpGet("GetMonitorings")]
+        public async Task<ActionResult> GetMonitorings(MonitoringDto monitoringdto)
+        {
+            try
+            {
+                var result = await _customsRepo.GetMonitorings(monitoringdto);
+                return StatusCode(StatusCodes.Status201Created, result);
 
-       
+               
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving monitorings: {ex.Message}");
+            }
+        }
+
+
+
 
 
 

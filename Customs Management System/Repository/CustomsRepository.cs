@@ -74,7 +74,60 @@ namespace Customs_Management_System.Repository
         {
             throw new NotImplementedException();
         }
-      
 
+        public async Task<List<MonitoringDto>> GetMonitorings(MonitoringDto monitoringDto)
+        {
+            try
+            {
+                var monitorings = await _context.Monitorings
+                    .Where(m => m.MethodOfShipment == monitoringDto.MethodOfShipment)
+                    .Where(m => m.PortOfDeparture == monitoringDto.PortOfDeparture)
+                    .Where(m => m.PortOfDestination == monitoringDto.PortOfDestination)
+                    .Where(m => m.DepartureDate == monitoringDto.DepartureDate)
+                    .Where(m => m.ArrivalDate == monitoringDto.ArrivalDate)
+                    .Where(m => m.Status == monitoringDto.Status)
+                    .Select(m => new MonitoringDto
+                    {
+                        MethodOfShipment = m.MethodOfShipment,
+                        PortOfDeparture = m.PortOfDeparture,
+                        PortOfDestination = m.PortOfDestination,
+                        DepartureDate = m.DepartureDate,
+                        ArrivalDate = m.ArrivalDate,
+                        Status = m.Status,
+                        Declaration = new DeclarationDto
+                        {
+                           
+                            UserId = m.Declaration.UserId,
+                            DeclarationDate = m.Declaration.DeclarationDate,
+                            Status = m.Declaration.Status,
+                            Products = m.Declaration.Products.Select(p => new ProductDto
+                            {
+                                ProductName = p.ProductName,
+                                Quantity = p.Quantity,
+                                Weight = p.Weight,
+                                CountryOfOrigin = p.CountryOfOrigin,
+                                Hscode = p.Hscode,
+                                DeclarationId = p.DeclarationId
+                            }).ToList(),
+                            Shipments = m.Declaration.Shipments.Select(s => new ShipmentDto
+                            {
+                                MethodOfShipment = s.MethodOfShipment,
+                                PortOfDeparture = s.PortOfDeparture,
+                                PortOfDestination = s.PortOfDestination,
+                                DepartureDate = s.DepartureDate,
+                                ArrivalDate = s.ArrivalDate
+                            }).ToList()
+                        }
+                    }).ToListAsync();
+
+                return monitorings;
+               
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Error retrieving monitorings: {e.Message}");
+            }
+
+        }
     }
 }

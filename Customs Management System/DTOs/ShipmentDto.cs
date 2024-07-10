@@ -9,7 +9,7 @@ namespace Customs_Management_System.DTOs
     {
    
        
-
+        public int ShipmentId { get; set; }
     
         public string? MethodOfShipment { get; set; }
 

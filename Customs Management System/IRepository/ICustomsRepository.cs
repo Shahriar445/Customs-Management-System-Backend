@@ -7,6 +7,7 @@ namespace Customs_Management_System.IRepository
     {
        
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
-        Task<string> GetDeclarationByIdAsync(int id); // Add this method
+        Task<string> GetDeclarationByIdAsync(int id); 
+        Task<List<MonitoringDto>> GetMonitorings(MonitoringDto monitoringDto);
     }
 }
