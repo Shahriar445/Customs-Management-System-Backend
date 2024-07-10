@@ -14,8 +14,8 @@ namespace Customs_Management_System.DTOs
         public string RoleName { get; set; } = null!;
 
       
-        public virtual ICollection<RoleDetail> RoleDetails { get; set; } = new List<RoleDetail>();
+        public virtual ICollection<RoleDetailDto> RoleDetails { get; set; } = new List<RoleDetailDto>();
 
-        public virtual ICollection<User> Users { get; set; } = new List<User>();
+        public virtual ICollection<UserDto> Users { get; set; } = new List<UserDto>();
     }
 }

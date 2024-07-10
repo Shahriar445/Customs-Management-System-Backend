@@ -20,14 +20,14 @@ namespace Customs_Management_System.DTOs
      
         public string? PortOfDestination { get; set; }
 
-        public DateOnly? DepartureDate { get; set; }
+        public DateTime? DepartureDate { get; set; }
 
-        public DateOnly? ArrivalDate { get; set; }
+        public DateTime? ArrivalDate { get; set; }
 
         public string? Status { get; set; }
 
       
-        public virtual Declaration Declaration { get; set; } = null!;
+        public virtual DeclarationDto Declaration { get; set; } = null!;
     }
 }
 

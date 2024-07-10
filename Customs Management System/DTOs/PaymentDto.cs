@@ -15,17 +15,17 @@ namespace Customs_Management_System.DTOs
 
         public decimal Amount { get; set; }
 
-        public DateOnly Date { get; set; }
+        public DateTime Date { get; set; }
 
         public string Status { get; set; } = null!;
 
         public int? ProductId { get; set; }
 
-        public virtual Declaration Declaration { get; set; } = null!;
+        public virtual DeclarationDto Declaration { get; set; } = null!;
 
-        public virtual Product? Product { get; set; }
+        public virtual ProductDto? Product { get; set; }
 
   
-        public virtual User User { get; set; } = null!;
+        public virtual UserDto User { get; set; } = null!;
     }
 }

@@ -8,7 +8,7 @@ namespace Customs_Management_System.DTOs
     public class ProductDto
     {
 
-        public int ProductId { get; set; }
+      
 
         public int DeclarationId { get; set; }
 
@@ -26,9 +26,6 @@ namespace Customs_Management_System.DTOs
         public string? Hscode { get; set; }
 
         
-        public virtual Declaration Declaration { get; set; } = null!;
-
-        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }
 

@@ -1,7 +1,9 @@
-﻿using Customs_Management_System.DTOs;
+﻿using Customs_Management_System.DBContexts.Models;
+using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Customs_Management_System.Controllers
 {
@@ -24,7 +26,7 @@ namespace Customs_Management_System.Controllers
         {
             try
             {
-                var result = await _customsRepo.CreateDeclaration(declarationDto);
+                var result = await _customsRepo.CreateDeclarationAsync(declarationDto);
                 return StatusCode(StatusCodes.Status201Created, result);
             }
             catch (Exception e)
@@ -32,6 +34,8 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
+
+       
 
 
 

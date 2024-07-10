@@ -15,7 +15,7 @@ namespace Customs_Management_System.DTOs
      
         public string Password { get; set; } = null!;
 
-        public DateOnly CreateDate { get; set; }
+        public DateTime CreateDate { get; set; }
 
        
         public string Email { get; set; } = null!;
@@ -24,15 +24,15 @@ namespace Customs_Management_System.DTOs
         public DateTime CreateAt { get; set; }
 
    
-        public virtual ICollection<Declaration> Declarations { get; set; } = new List<Declaration>();
+        public virtual ICollection<DeclarationDto> Declarations { get; set; } = new List<DeclarationDto>();
 
       
-        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        public virtual ICollection<PaymentDto> Payments { get; set; } = new List<PaymentDto>();
 
       
-        public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
+        public virtual ICollection<ReportDto> Reports { get; set; } = new List<ReportDto>();
 
-        public virtual Role UserRole { get; set; } = null!;
+        public virtual RoleDto UserRole { get; set; } = null!;
 
 
     }

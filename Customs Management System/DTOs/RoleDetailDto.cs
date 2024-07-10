@@ -18,6 +18,6 @@ namespace Customs_Management_System.DTOs
         public string? ContractNumber { get; set; }
 
       
-        public virtual Role Role { get; set; } = null!;
+        public virtual RoleDto Role { get; set; } = null!;
     }
 }

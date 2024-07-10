@@ -5,7 +5,8 @@ namespace Customs_Management_System.IRepository
 {
     public interface ICustomsRepository
     {
-        Task<string> CreateDeclaration(DeclarationDto declarationId);
-        
+       
+        Task<string> CreateDeclarationAsync(DeclarationDto declaration);
+        Task<string> GetDeclarationByIdAsync(int id); // Add this method
     }
 }
