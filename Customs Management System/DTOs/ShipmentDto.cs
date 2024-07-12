@@ -18,9 +18,9 @@ namespace Customs_Management_System.DTOs
 
         public string? PortOfDestination { get; set; }
 
-        public DateTime? DepartureDate { get; set; }
+        public DateTime DepartureDate { get; set; }
 
-        public DateTime? ArrivalDate { get; set; }
+        public DateTime ArrivalDate { get; set; }
 
      
 

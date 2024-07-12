@@ -7,9 +7,8 @@ namespace Customs_Management_System.DTOs
 {
     public class DeclarationDto
     {
-
         public int UserId { get; set; }
-
+        public int DeclarationId { get; set; }
         public DateTime DeclarationDate { get; set; }
 
         public string Status { get; set; } = null!;

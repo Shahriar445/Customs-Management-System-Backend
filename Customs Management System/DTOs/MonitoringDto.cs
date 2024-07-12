@@ -7,29 +7,20 @@ namespace Customs_Management_System.DTOs
 {
     public class MonitoringDto
     {
-      
 
-        public string? MethodOfShipment { get; set; }
-
-       
-        public string? PortOfDeparture { get; set; }
-
-     
-        public string? PortOfDestination { get; set; }
-
-        public DateTime? DepartureDate { get; set; }
-
-        public DateTime? ArrivalDate { get; set; }
-
-        public string? Status { get; set; }
 
         
-       public ProductDto Product { get; set; } = null!;
-
-        public ShipmentDto Shipment { get; set; } = null!;
-
-      
-        public virtual DeclarationDto Declaration { get; set; } = null!;
+        public string? MethodOfShipment { get; set; }
+        public string? PortOfDeparture { get; set; }
+        public string? PortOfDestination { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public DateTime ArrivalDate { get; set; }
+        public string? Status { get; set; }
+        public string? ProductName { get; set; }
+        public int Quantity { get; set; }
+        public double Weight { get; set; }
+        public string? CountryOfOrigin { get; set; }
+        public string? Hscode { get; set; }
     }
 }
 

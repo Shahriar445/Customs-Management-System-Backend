@@ -34,27 +34,74 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
-        // GET: api/Monitoring
+
         [HttpGet("GetMonitorings")]
-        public async Task<ActionResult> GetMonitorings(MonitoringDto monitoringdto)
+        public async Task<ActionResult<List<MonitoringDto>>> GetMonitorings()
         {
             try
             {
-                var result = await _customsRepo.GetMonitorings(monitoringdto);
-                return StatusCode(StatusCodes.Status201Created, result);
-
-               
+                var monitorings = await _customsRepo.GetMonitoringsAsync();
+                return Ok(monitorings);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, $"An error occurred while retrieving monitorings: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
 
 
+        // reate report
 
+        [HttpPost("CreateReport")]
+        public async Task<IActionResult> CreateReport([FromBody] ReportDto reportDto)
+        {
+            try
+            {
+                await _customsRepo.CreateReportAsync(reportDto);
+                return StatusCode(201, "Report created successfully");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error creating report");
+                return StatusCode(500, "An error occurred while creating the report");
+            }
+        }
 
+        [HttpGet("GetReports")]
+        public async Task<IActionResult> GetReports()
+        {
+            try
+            {
+                var reports = await _customsRepo.GetReportsAsync();
+                return Ok(reports);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error retrieving reports");
+                return StatusCode(500, "An error occurred while retrieving reports");
+            }
+        }
 
-
+        [HttpGet("GetReport/{reportId}")]
+        public async Task<IActionResult> GetReport(int reportId)
+        {
+            try
+            {
+                var report = await _customsRepo.GetReportByIdAsync(reportId);
+                if (report == null)
+                {
+                    return NotFound();
+                }
+                return Ok(report);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error retrieving report");
+                return StatusCode(500, "An error occurred while retrieving the report");
+            }
+        }
     }
-}
+
+
+};
+

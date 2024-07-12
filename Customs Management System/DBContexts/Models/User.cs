@@ -13,7 +13,7 @@ public partial class User
 
     public string Password { get; set; } = null!;
 
-    public DateOnly CreateDate { get; set; }
+    public DateTime CreateDate { get; set; }
 
     public string Email { get; set; } = null!;
 

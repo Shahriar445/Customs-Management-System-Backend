@@ -2,6 +2,7 @@
 using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System.Xml.Linq;
 
@@ -75,41 +76,122 @@ namespace Customs_Management_System.Repository
             throw new NotImplementedException();
         }
 
-        public async Task<List<MonitoringDto>> GetMonitorings(MonitoringDto monitoringDto)
+       
+
+        public async Task<List<MonitoringDto>> GetMonitoringsAsync()
         {
             try
             {
-                var monitorings = await _context.Monitorings
-                    .Where(m => m.MethodOfShipment == monitoringDto.MethodOfShipment)
-                    .Where(m => m.PortOfDeparture == monitoringDto.PortOfDeparture)
-                    .Where(m => m.PortOfDestination == monitoringDto.PortOfDestination)
-                    .Where(m => m.DepartureDate == monitoringDto.DepartureDate)
-                    .Where(m => m.ArrivalDate == monitoringDto.ArrivalDate)
-                    .Where(m => m.Status == monitoringDto.Status)
-                    .Select(m => new MonitoringDto
-                    {
-                        MethodOfShipment = m.MethodOfShipment,
-                        PortOfDeparture = m.PortOfDeparture,
-                        PortOfDestination = m.PortOfDestination,
-                        DepartureDate = m.DepartureDate,
-                        ArrivalDate = m.ArrivalDate,
-                        Status = m.Status,
-                        Declaration = new DeclarationDto
+                    var monitorings = await _context.Monitorings
+                .Include(m => m.Declaration)
+                .ThenInclude(d => d.Products)
+                .Include(m => m.Declaration)
+                .ThenInclude(d => d.Shipments)
+                .Select(m => new MonitoringDto
+                {
+                    
+                    MethodOfShipment = m.MethodOfShipment,
+                    PortOfDeparture = m.PortOfDeparture,
+                    PortOfDestination = m.PortOfDestination,
+                    DepartureDate = m.DepartureDate,
+                    ArrivalDate = m.ArrivalDate,
+                    Status = m.Status,
+                    ProductName = m.Declaration.Products.FirstOrDefault().ProductName, // Assumes single product per declaration
+                    Quantity = m.Declaration.Products.FirstOrDefault().Quantity,
+                    Weight = (double)m.Declaration.Products.FirstOrDefault().Weight,
+                    CountryOfOrigin = m.Declaration.Products.FirstOrDefault().CountryOfOrigin,
+                    Hscode = m.Declaration.Products.FirstOrDefault().Hscode
+                })
+                .ToListAsync();
+
+                    return monitorings;  
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"An unexpected error occurred. Details: {e.Message}");
+
+            }
+
+          
+        }
+
+
+        // for Report part 
+
+
+        public async Task CreateReportAsync(ReportDto reportDto)
+        {
+            // First, create the Declaration and related entities
+            var declaration = new Declaration
+            {
+                UserId = reportDto.Declaration.UserId,
+                DeclarationDate = reportDto.Declaration.DeclarationDate,
+                Status = reportDto.Declaration.Status,
+                Products = reportDto.Declaration.Products.Select(p => new Product
+                {
+                    ProductName = p.ProductName,
+                    Quantity = p.Quantity,
+                    Weight = p.Weight,
+                    CountryOfOrigin = p.CountryOfOrigin,
+                    Hscode = p.Hscode
+                }).ToList(),
+                Shipments = reportDto.Declaration.Shipments.Select(s => new Shipment
+                {
+                    MethodOfShipment = s.MethodOfShipment,
+                    PortOfDeparture = s.PortOfDeparture,
+                    PortOfDestination = s.PortOfDestination,
+                    DepartureDate = s.DepartureDate,
+                    ArrivalDate = s.ArrivalDate
+                }).ToList()
+            };
+
+            await _context.Declarations.AddAsync(declaration);
+            await _context.SaveChangesAsync();
+
+            // Then, create the Report and associate it with the Declaration
+            var report = new Report
+            {
+                UserId = reportDto.UserId,
+                ReportType = reportDto.ReportType,
+                Content = reportDto.Content,
+                CreateAt = DateTime.UtcNow,
+                 // assuming you have this field in Report model
+            };
+
+            await _context.Reports.AddAsync(report);
+            await _context.SaveChangesAsync();
+        }
+
+
+        public async Task<IEnumerable<ReportDto>> GetReportsAsync()
+        {
+#pragma warning disable CS8601 // Possible null reference assignment.
+            var reports = await _context.Reports
+                .Include(r => r.User) // Include related User if needed
+                .Select(r => new ReportDto
+                {
+                    ReportId = r.ReportId,
+                    UserId = r.UserId,
+                    ReportType = r.ReportType,
+                    Content = r.Content,
+                    CreateAt = r.CreateAt,
+                    Declaration = _context.Declarations
+                        .Where(d => d.UserId == r.UserId) // Example of how to find Declaration by UserId
+                        .Select(d => new DeclarationDto
                         {
-                           
-                            UserId = m.Declaration.UserId,
-                            DeclarationDate = m.Declaration.DeclarationDate,
-                            Status = m.Declaration.Status,
-                            Products = m.Declaration.Products.Select(p => new ProductDto
+                            DeclarationId = d.DeclarationId,
+                            UserId = d.UserId,
+                            DeclarationDate = d.DeclarationDate,
+                            Status = d.Status,
+                            Products = d.Products.Select(p => new ProductDto
                             {
                                 ProductName = p.ProductName,
                                 Quantity = p.Quantity,
                                 Weight = p.Weight,
                                 CountryOfOrigin = p.CountryOfOrigin,
-                                Hscode = p.Hscode,
-                                DeclarationId = p.DeclarationId
+                                Hscode = p.Hscode
                             }).ToList(),
-                            Shipments = m.Declaration.Shipments.Select(s => new ShipmentDto
+                            Shipments = d.Shipments.Select(s => new ShipmentDto
                             {
                                 MethodOfShipment = s.MethodOfShipment,
                                 PortOfDeparture = s.PortOfDeparture,
@@ -117,17 +199,80 @@ namespace Customs_Management_System.Repository
                                 DepartureDate = s.DepartureDate,
                                 ArrivalDate = s.ArrivalDate
                             }).ToList()
-                        }
-                    }).ToListAsync();
+                        })
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+#pragma warning restore CS8601 // Possible null reference assignment.
 
-                return monitorings;
-               
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Error retrieving monitorings: {e.Message}");
-            }
-
+            return reports;
         }
+
+
+
+
+
+
+        public async Task<ReportDto> GetReportByIdAsync(int reportId)
+        {
+            var report = await _context.Reports
+                .Include(r => r.User) // Include related User if needed
+                .FirstOrDefaultAsync(r => r.ReportId == reportId);
+
+            if (report == null)
+            {
+                return null; // Return null if no report found with the given reportId
+            }
+
+            // Fetch associated Declaration details using a query based on UserId or any relevant identifier
+            var declaration = await _context.Declarations
+                .Include(d => d.Products)
+                .Include(d => d.Shipments)
+                .FirstOrDefaultAsync(d => d.UserId == report.UserId); // Adjust based on your actual relationship
+
+            if (declaration == null)
+            {
+                return null; // Handle case where associated declaration is not found
+            }
+
+            // Map the retrieved Report and Declaration to ReportDto
+            var reportDto = new ReportDto
+            {
+                ReportId = report.ReportId,
+                UserId = report.UserId,
+                ReportType = report.ReportType,
+                Content = report.Content,
+                CreateAt = report.CreateAt,
+                Declaration = new DeclarationDto
+                {
+                    DeclarationId = declaration.DeclarationId,
+                    UserId = declaration.UserId,
+                    DeclarationDate = declaration.DeclarationDate,
+                    Status = declaration.Status,
+                    Products = declaration.Products.Select(p => new ProductDto
+                    {
+                        ProductName = p.ProductName,
+                        Quantity = p.Quantity,
+                        Weight = p.Weight,
+                        CountryOfOrigin = p.CountryOfOrigin,
+                        Hscode = p.Hscode
+                    }).ToList(),
+                    Shipments = declaration.Shipments.Select(s => new ShipmentDto
+                    {
+                        MethodOfShipment = s.MethodOfShipment,
+                        PortOfDeparture = s.PortOfDeparture,
+                        PortOfDestination = s.PortOfDestination,
+                        DepartureDate = s.DepartureDate,
+                        ArrivalDate = s.ArrivalDate
+                    }).ToList()
+                }
+            };
+
+            return reportDto;
+        }
+
+
+
     }
 }
+
