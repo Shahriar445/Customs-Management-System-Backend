@@ -1,6 +1,7 @@
 ﻿using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
+using Customs_Management_System.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,50 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(500, "An error occurred while retrieving the report");
             }
         }
+
+
+        //payment 
+
+        [HttpGet("GetDeclarationsByUserId/{userId}")]
+        public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarationsByUserIdAsync(int userId)
+        {
+            var declarations = await _customsRepo.GetDeclarationsByUserIdAsync(userId);
+
+            var declarationDtos = declarations.Select(d => new DeclarationDto
+            {
+                DeclarationId = d.DeclarationId,
+                DeclarationDate = d.DeclarationDate,
+                Status = d.Status,
+                Products = d.Products.Select(p => new ProductDto
+                {
+                    
+                    ProductName = p.ProductName,
+                    Quantity = p.Quantity,
+                    // Add other properties as needed
+                }).ToList()
+            }).ToList();
+
+            return Ok(declarationDtos);
+        }
+
+        [HttpPost("SubmitPayment")]
+        public async Task<ActionResult> SubmitPayment(PaymentDto paymentDto)
+        {
+            var payment = new Payment
+            {
+                UserId = paymentDto.UserId,
+                DeclarationId = paymentDto.DeclarationId,
+                ProductId = paymentDto.ProductId,
+                Amount = paymentDto.Amount,
+                Date = DateTime.UtcNow,
+                Status = "Pending" // Or whatever initial status you need
+            };
+
+            await _customsRepo.AddPaymentAsync(payment);
+
+            return Ok(new { Message = "Payment submitted successfully" });
+        }
+
     }
 
 

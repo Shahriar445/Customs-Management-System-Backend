@@ -93,8 +93,8 @@ namespace Customs_Management_System.Repository
                     MethodOfShipment = m.MethodOfShipment,
                     PortOfDeparture = m.PortOfDeparture,
                     PortOfDestination = m.PortOfDestination,
-                    DepartureDate = m.DepartureDate,
-                    ArrivalDate = m.ArrivalDate,
+                    DepartureDate = (DateTime)m.DepartureDate,
+                    ArrivalDate = (DateTime)m.ArrivalDate,
                     Status = m.Status,
                     ProductName = m.Declaration.Products.FirstOrDefault().ProductName, // Assumes single product per declaration
                     Quantity = m.Declaration.Products.FirstOrDefault().Quantity,
@@ -196,8 +196,8 @@ namespace Customs_Management_System.Repository
                                 MethodOfShipment = s.MethodOfShipment,
                                 PortOfDeparture = s.PortOfDeparture,
                                 PortOfDestination = s.PortOfDestination,
-                                DepartureDate = s.DepartureDate,
-                                ArrivalDate = s.ArrivalDate
+                                DepartureDate = (DateTime)s.DepartureDate,
+                                ArrivalDate = (DateTime)s.ArrivalDate
                             }).ToList()
                         })
                         .FirstOrDefault()
@@ -262,8 +262,8 @@ namespace Customs_Management_System.Repository
                         MethodOfShipment = s.MethodOfShipment,
                         PortOfDeparture = s.PortOfDeparture,
                         PortOfDestination = s.PortOfDestination,
-                        DepartureDate = s.DepartureDate,
-                        ArrivalDate = s.ArrivalDate
+                        DepartureDate = (DateTime)s.DepartureDate,
+                        ArrivalDate = (DateTime)s.ArrivalDate
                     }).ToList()
                 }
             };
@@ -271,6 +271,20 @@ namespace Customs_Management_System.Repository
             return reportDto;
         }
 
+        // payment 
+        public async Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId)
+        {
+            return await _context.Declarations
+                .Include(d => d.Products)
+                .Where(d => d.UserId == userId)
+                .ToListAsync();
+        }
+
+        public async Task AddPaymentAsync(Payment payment)
+        {
+            await _context.Payments.AddAsync(payment);
+            await _context.SaveChangesAsync();
+        }
 
 
     }

@@ -3,7 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34916.146
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Customs Management System", "Customs Management System\Customs Management System.csproj", "{4427C313-9B37-45BC-9BC8-9CA60517E4CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Customs Management System", "Customs Management System\Customs Management System.csproj", "{4427C313-9B37-45BC-9BC8-9CA60517E4CA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{37146DF8-F209-461B-85F5-F5143FFD23EC}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

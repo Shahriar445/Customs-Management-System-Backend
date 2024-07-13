@@ -14,5 +14,12 @@ namespace Customs_Management_System.IRepository
         Task CreateReportAsync(ReportDto reportDto);
         Task<IEnumerable<ReportDto>> GetReportsAsync();
         Task<ReportDto> GetReportByIdAsync(int reportId);
+
+        //payment
+        Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId);
+        Task AddPaymentAsync(Payment payment);
+
+
+
     }
 }

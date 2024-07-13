@@ -1,9 +1,11 @@
 ﻿
 
-scaffold-DbContext "Data Source=localhost\sqlexpress;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True" Microsoft.EntityFrameWorkCore.SqlServer -outputdir DBContexts/Models -context CMSDbContext -contextdir DbContexts  -Force
+scaffold-DbContext "Data Source=DESKTOP-PM9DUD3;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True" Microsoft.EntityFrameWorkCore.SqlServer -outputdir DBContexts/Models -context CMSDbContext -contextdir DbContexts  -Force
 
 home connection string 
 Data Source=localhost\sqlexpress;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True
 
 office connection string 
 Data Source=DESKTOP-PM9DUD3;Initial Catalog=CMS;Integrated Security=True;Trust Server Certificate=True
+
+Data Source=DESKTOP-PM9DUD3;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True

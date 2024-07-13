@@ -15,9 +15,9 @@ public partial class Shipment
 
     public string? PortOfDestination { get; set; }
 
-    public DateTime DepartureDate { get; set; }
+    public DateTime? DepartureDate { get; set; }
 
-    public DateTime ArrivalDate { get; set; }
+    public DateTime? ArrivalDate { get; set; }
 
     public string? Status { get; set; }
 
