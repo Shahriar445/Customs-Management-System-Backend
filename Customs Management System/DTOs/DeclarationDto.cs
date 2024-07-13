@@ -10,20 +10,11 @@ namespace Customs_Management_System.DTOs
         public int UserId { get; set; }
         public int DeclarationId { get; set; }
         public DateTime DeclarationDate { get; set; }
-
-        public string Status { get; set; } = null!;
-
-
-
-        // public virtual ICollection<ProductDto> Products { get; set; } = new List<ProductDto>();
-
-
-        // public virtual ICollection<ShipmentDto> Shipments { get; set; } = new List<ShipmentDto>();
+        public string Status { get; set; }
         public List<ProductDto> Products { get; set; }
+        public List<ShipmentDto> Shipments { get; set; }
 
-        public List<ShipmentDto>Shipments { get; set; }
-       
- 
+
 
     }
 }

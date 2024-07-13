@@ -19,6 +19,8 @@ public partial class Product
 
     public string? Hscode { get; set; }
 
+    public string? Category { get; set; }
+
     public virtual Declaration Declaration { get; set; } = null!;
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

@@ -24,8 +24,9 @@ namespace Customs_Management_System.DTOs
         public string? CountryOfOrigin { get; set; }
 
         public string? Hscode { get; set; }
+        public string? Category { get; set; }
 
-        
+
     }
 }
 

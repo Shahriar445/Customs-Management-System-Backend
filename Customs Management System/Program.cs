@@ -5,31 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-
-
 // DbContext register
-
 builder.Services.AddDbContext<CMSDbContext>();
 
-// Register repository through Dependency Inversion 
-
+// Register repository through Dependency Inversion
 DependencyInversion.RegisterServices(builder.Services);
 
-
-
-//service for Frontend connection 
+// Use CORS for all IPs
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.WithOrigins("http://127.0.0.1:5501", "http://localhost:5501")
-        .AllowAnyMethod()
-        .AllowAnyHeader();
-    });
+    options.AddPolicy("Open", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
-
-
-
 
 builder.Services.AddControllers();
 
@@ -37,23 +23,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 var app = builder.Build();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
- 
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors();
 app.UseHttpsRedirection();
-app.UseAuthorization();
+app.UseCors("Open");
+app.UseStaticFiles(); // For serving static files such as images
+app.UseAuthentication(); // Add authentication middleware
+app.UseAuthorization(); // Add authorization middleware
 
-app.UseStaticFiles(); // for image file 
-app.UseAuthentication(); // add authentication middleware 
-app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

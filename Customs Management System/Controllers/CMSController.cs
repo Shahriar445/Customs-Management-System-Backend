@@ -1,4 +1,5 @@
-﻿using Customs_Management_System.DBContexts.Models;
+﻿using Customs_Management_System.DbContexts;
+using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
 using Customs_Management_System.Repository;
@@ -12,14 +13,16 @@ namespace Customs_Management_System.Controllers
     [ApiController]
     public class CMSController : ControllerBase
     {
-
+        private readonly CMSDbContext _context;
         private static ICustomsRepository _customsRepo;
         private readonly ILogger<CMSController> _logger;
         
-        public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo)
+        public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo, CMSDbContext context)
         {
             _logger=logger;
             _customsRepo=customsRepo;
+            _context=context;
+
         }
         //----------------------------------------------Create Items --------------------------------------
         [HttpPost("/CreateDeclaration")]
@@ -35,7 +38,31 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
+        [HttpGet("GetDeclarations")]
+        public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarations()
+        {
+            try
+            {
+                var declarations = await _context.Declarations
+                    .Include(d => d.Products)
+                    .Include(d => d.Shipments)
+                    .Select(d => new DeclarationDto
+                    {
+                        DeclarationId = d.DeclarationId,
+                        UserId = d.UserId,
+                        DeclarationDate = d.DeclarationDate,
+                        Status = d.Status,
+                        // Add other properties from Products and Shipments as needed
+                    })
+                    .ToListAsync();
 
+                return Ok(declarations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
         [HttpGet("GetMonitorings")]
         public async Task<ActionResult<List<MonitoringDto>>> GetMonitorings()
         {
