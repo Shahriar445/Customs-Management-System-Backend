@@ -7,18 +7,25 @@ namespace Customs_Management_System.IRepository
     {
        
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
-        Task<string> GetDeclarationByIdAsync(int id); 
+      
         Task<List<MonitoringDto>> GetMonitoringsAsync( );
 
         // report part importer
         Task CreateReportAsync(ReportDto reportDto);
-        Task<IEnumerable<ReportDto>> GetReportsAsync();
-        Task<ReportDto> GetReportByIdAsync(int reportId);
+        
+       
 
         //payment
         Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId);
         Task AddPaymentAsync(Payment payment);
 
+
+        //dashboard 
+        Task<int> GetTotalDeclarationsAsync(int userId);
+        Task<int> GetPendingPaymentsAsync(int userId);
+        Task<int> GetShipmentMonitoringAsync(int userId);
+        Task<int> GetGeneratedReportsAsync(int userId);
+        Task<DashboardOverViewDto> GetDashboardOverviewAsync();
 
 
     }

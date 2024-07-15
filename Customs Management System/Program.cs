@@ -5,16 +5,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-// DbContext register
+// Register DbContext
 builder.Services.AddDbContext<CMSDbContext>();
 
-// Register repository through Dependency Inversion
+// Register repositories and services through Dependency Injection
 DependencyInversion.RegisterServices(builder.Services);
 
-// Use CORS for all IPs
+// Configure CORS to allow all origins, headers, and methods
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Open", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("Open", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers();
@@ -32,11 +37,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("Open");
+
+app.UseHttpsRedirection();
 app.UseStaticFiles(); // For serving static files such as images
+
 app.UseAuthentication(); // Add authentication middleware
-app.UseAuthorization(); // Add authorization middleware
+app.UseAuthorization();
 
 app.MapControllers();
 

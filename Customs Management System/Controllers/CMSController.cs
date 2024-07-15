@@ -16,7 +16,7 @@ namespace Customs_Management_System.Controllers
         private readonly CMSDbContext _context;
         private static ICustomsRepository _customsRepo;
         private readonly ILogger<CMSController> _logger;
-        
+
         public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo, CMSDbContext context)
         {
             _logger=logger;
@@ -24,8 +24,18 @@ namespace Customs_Management_System.Controllers
             _context=context;
 
         }
-        //----------------------------------------------Create Items --------------------------------------
-        [HttpPost("/CreateDeclaration")]
+        //----------------------------------------------Importer Api  --------------------------------------
+
+        /*                              Total 6 api 
+                                                            1. Declaration submit---- done
+                                                            2. get all Declaration--- done
+                                                            3. payment submit --- bug
+                                                            4. get monitoring list-- done
+                                                            5. create Report -- bug
+                                                            6. for Dashboard -- remain
+         
+         */
+        [HttpPost("/CreateDeclarationImporter")]
         public async Task<IActionResult> CreateDeclaration(DeclarationDto declarationDto)
         {
             try
@@ -38,7 +48,7 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
-        [HttpGet("GetDeclarations")]
+        [HttpGet("GetDeclarationsImporter")]
         public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarations()
         {
             try
@@ -63,7 +73,7 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
-        [HttpGet("GetMonitorings")]
+        [HttpGet("GetMonitoringImporter")]
         public async Task<ActionResult<List<MonitoringDto>>> GetMonitorings()
         {
             try
@@ -78,9 +88,7 @@ namespace Customs_Management_System.Controllers
         }
 
 
-        // reate report
-
-        [HttpPost("CreateReport")]
+        [HttpPost("CreateReportImporter")]
         public async Task<IActionResult> CreateReport([FromBody] ReportDto reportDto)
         {
             try
@@ -95,63 +103,36 @@ namespace Customs_Management_System.Controllers
             }
         }
 
-        [HttpGet("GetReports")]
-        public async Task<IActionResult> GetReports()
-        {
-            try
-            {
-                var reports = await _customsRepo.GetReportsAsync();
-                return Ok(reports);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Error retrieving reports");
-                return StatusCode(500, "An error occurred while retrieving reports");
-            }
-        }
+        // For Payment & Report
 
-        [HttpGet("GetReport/{reportId}")]
-        public async Task<IActionResult> GetReport(int reportId)
-        {
-            try
-            {
-                var report = await _customsRepo.GetReportByIdAsync(reportId);
-                if (report == null)
-                {
-                    return NotFound();
-                }
-                return Ok(report);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Error retrieving report");
-                return StatusCode(500, "An error occurred while retrieving the report");
-            }
-        }
-
-
-        //payment 
-
-        [HttpGet("GetDeclarationsByUserId/{userId}")]
+        [HttpGet("GetDeclarationsByUserIdImporter/{userId}")]
         public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarationsByUserIdAsync(int userId)
         {
-            var declarations = await _customsRepo.GetDeclarationsByUserIdAsync(userId);
-
-            var declarationDtos = declarations.Select(d => new DeclarationDto
+            try
             {
-                DeclarationId = d.DeclarationId,
-                DeclarationDate = d.DeclarationDate,
-                Status = d.Status,
-                Products = d.Products.Select(p => new ProductDto
-                {
-                    
-                    ProductName = p.ProductName,
-                    Quantity = p.Quantity,
-                    // Add other properties as needed
-                }).ToList()
-            }).ToList();
+                var declarations = await _customsRepo.GetDeclarationsByUserIdAsync(userId);
 
-            return Ok(declarationDtos);
+                var declarationDtos = declarations.Select(d => new DeclarationDto
+                {
+                    DeclarationId = d.DeclarationId,
+                    DeclarationDate = d.DeclarationDate,
+                    Status = d.Status,
+                    Products = d.Products.Select(p => new ProductDto
+                    {
+
+                        ProductName = p.ProductName,
+                        Quantity = p.Quantity,
+                        // Add other properties as needed
+                    }).ToList()
+                }).ToList();
+
+                return Ok(declarationDtos);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+            }
+          
         }
 
         [HttpPost("SubmitPayment")]
@@ -172,8 +153,52 @@ namespace Customs_Management_System.Controllers
             return Ok(new { Message = "Payment submitted successfully" });
         }
 
+
+        // ------------------------------------------------------------------------------------------------------------------------------------------------------------
+        [HttpGet("dashboard-overview")]
+        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
+        {
+            try
+            {
+                var dashboardOverview = await _customsRepo.GetDashboardOverviewAsync();
+                return Ok(dashboardOverview);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
-
-
 };
 
