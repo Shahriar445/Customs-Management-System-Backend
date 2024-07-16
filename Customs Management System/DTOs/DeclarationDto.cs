@@ -14,7 +14,6 @@ namespace Customs_Management_System.DTOs
         public List<ProductDto> Products { get; set; }
         public List<ShipmentDto> Shipments { get; set; }
 
-
-
+       
     }
 }

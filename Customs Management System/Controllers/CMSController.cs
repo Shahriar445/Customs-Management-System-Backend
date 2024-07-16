@@ -132,7 +132,7 @@ namespace Customs_Management_System.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
-          
+
         }
 
         [HttpPost("SubmitPayment")]
@@ -154,14 +154,21 @@ namespace Customs_Management_System.Controllers
         }
 
 
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-        [HttpGet("dashboard-overview")]
-        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
+
+
+
+
+
+
+
+
+        [HttpGet("reportsByRole")]
+        public async Task<ActionResult<IEnumerable<ReportDto>>> GetReportsByRole()
         {
             try
             {
-                var dashboardOverview = await _customsRepo.GetDashboardOverviewAsync();
-                return Ok(dashboardOverview);
+                var reports = await _customsRepo.GetReportsByRoleQueryable();
+                return Ok(reports);
             }
             catch (Exception ex)
             {
@@ -179,26 +186,22 @@ namespace Customs_Management_System.Controllers
 
 
 
+        //--------------------------------------------------------------dashboard api 
 
+        [HttpGet("dashboard-overview")]
+        private async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
+        {
+            try
+            {
+                var dashboardOverview = await _customsRepo.GetDashboardOverviewAsync();
+                return Ok(dashboardOverview);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    }
-};
+    };
+}
 

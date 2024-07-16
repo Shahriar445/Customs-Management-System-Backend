@@ -3,6 +3,7 @@ using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Xml.Linq;
 
@@ -238,71 +239,83 @@ namespace Customs_Management_System.Repository
         }
 
 
-       
 
 
-        /* Get Report by id -- no need 
 
-        public async Task<ReportDto> GetReportByIdAsync(int reportId)
+        // Get Report by id -- no need 
+
+        public async Task<IEnumerable<ReportDto>> GetReportsByRoleQueryable()
         {
-            var report = await _context.Reports
-                .Include(r => r.User) // Include related User if needed
-                .FirstOrDefaultAsync(r => r.ReportId == reportId);
+            int roleId = 1;
+            List<ReportDto> reportDtos = new List<ReportDto>();
 
-            if (report == null)
+            try
             {
-                return null; // Return null if no report found with the given reportId
-            }
+                var roleIdParam = new SqlParameter("@RoleId", roleId);
 
-            // Fetch associated Declaration details using a query based on UserId or any relevant identifier
-            var declaration = await _context.Declarations
-                .Include(d => d.Products)
-                .Include(d => d.Shipments)
-                .FirstOrDefaultAsync(d => d.UserId == report.UserId); // Adjust based on your actual relationship
+                // Execute stored procedure
+                var reports = await _context.Reports
+                    .FromSqlRaw("EXECUTE dbo.GetReportsByRoleId @RoleId", roleIdParam)
+                    .ToListAsync();
 
-            if (declaration == null)
-            {
-                return null; // Handle case where associated declaration is not found
-            }
-
-            // Map the retrieved Report and Declaration to ReportDto
-            var reportDto = new ReportDto
-            {
-                ReportId = report.ReportId,
-                UserId = report.UserId,
-                ReportType = report.ReportType,
-                Content = report.Content,
-                CreateAt = report.CreateAt,
-                Declaration = new DeclarationDto
+                foreach (var report in reports)
                 {
-                    DeclarationId = declaration.DeclarationId,
-                    UserId = declaration.UserId,
-                    DeclarationDate = declaration.DeclarationDate,
-                    Status = declaration.Status,
-                    Products = declaration.Products.Select(p => new ProductDto
+                    // Fetch related declaration details
+                    var declarations = await _context.Declarations
+                        .Where(d => d.UserId == report.UserId)
+                        .Include(d => d.Products)
+                        .Include(d => d.Shipments)
+                        .ToListAsync();
+
+                    // Map to DeclarationDto
+                    var declarationDtos = declarations.Select(d => new DeclarationDto
                     {
-                        ProductName = p.ProductName,
-                        Quantity = p.Quantity,
-                        Weight = p.Weight,
-                        CountryOfOrigin = p.CountryOfOrigin,
-                        Hscode = p.Hscode,
-                        Category = p.Category
-                    }).ToList(),
-                    Shipments = declaration.Shipments.Select(s => new ShipmentDto
+                        UserId = d.UserId,
+                        DeclarationId = d.DeclarationId,
+                        DeclarationDate = d.DeclarationDate,
+                        Status = d.Status,
+                        Products = d.Products.Select(p => new ProductDto
+                        {
+                            ProductName = p.ProductName,
+                            Quantity = p.Quantity,
+                            Weight = p.Weight,
+                            CountryOfOrigin = p.CountryOfOrigin,
+                            Hscode = p.Hscode,
+                            Category = p.Category
+                        }).ToList(),
+                        Shipments = d.Shipments.Select(s => new ShipmentDto
+                        {
+                            ShipmentId = s.ShipmentId,
+                            MethodOfShipment = s.MethodOfShipment,
+                            PortOfDeparture = s.PortOfDeparture,
+                            PortOfDestination = s.PortOfDestination,
+                            DepartureDate = s.DepartureDate,
+                            ArrivalDate = s.ArrivalDate
+                        }).ToList()
+                    }).ToList();
+
+                    // Create ReportDto
+                    var reportDto = new ReportDto
                     {
-                        MethodOfShipment = s.MethodOfShipment,
-                        PortOfDeparture = s.PortOfDeparture,
-                        PortOfDestination = s.PortOfDestination,
-                        DepartureDate = (DateTime)s.DepartureDate,
-                        ArrivalDate = (DateTime)s.ArrivalDate
-                    }).ToList()
+                        ReportId = report.ReportId,
+                        UserId = report.UserId,
+                        ReportType = report.ReportType,
+                        Content = report.Content,
+                        CreateAt = report.CreateAt,
+                        Declaration = declarationDtos.FirstOrDefault() // Adjust based on your logic
+                    };
+
+                    reportDtos.Add(reportDto);
                 }
-            };
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions as needed
+                Console.Error.WriteLine($"Error fetching reports: {ex.Message}");
+            }
 
-            return reportDto;
+            return reportDtos;
         }
-        */
-
 
 
         // payment 

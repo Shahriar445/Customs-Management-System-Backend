@@ -12,7 +12,9 @@
 
         // Including related details for Declaration, Product, and Shipment
         public DeclarationDto Declaration { get; set; } = null!;
-       
+
+
+
     }
     
 }

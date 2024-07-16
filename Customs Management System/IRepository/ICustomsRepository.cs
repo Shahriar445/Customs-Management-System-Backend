@@ -12,8 +12,8 @@ namespace Customs_Management_System.IRepository
 
         // report part importer
         Task CreateReportAsync(ReportDto reportDto);
-        
-       
+
+     Task<IEnumerable<ReportDto>> GetReportsByRoleQueryable();
 
         //payment
         Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId);
@@ -26,6 +26,9 @@ namespace Customs_Management_System.IRepository
         Task<int> GetShipmentMonitoringAsync(int userId);
         Task<int> GetGeneratedReportsAsync(int userId);
         Task<DashboardOverViewDto> GetDashboardOverviewAsync();
+
+
+
 
 
     }
