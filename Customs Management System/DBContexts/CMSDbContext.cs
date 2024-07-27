@@ -36,18 +36,23 @@ public partial class CMSDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-PM9DUD3;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
+        => optionsBuilder.UseSqlServer("Data Source=localhost\\sqlexpress;Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Declaration>(entity =>
         {
-            entity.HasKey(e => e.DeclarationId).HasName("PK__Declarat__B4AA37DFAF754B9B");
+            entity.HasKey(e => e.DeclarationId).HasName("PK__Declarat__B4AA37DFD80B84E5");
 
             entity.Property(e => e.DeclarationDate).HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.Role).WithMany(p => p.Declarations)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RoleId_Declarations");
 
             entity.HasOne(d => d.User).WithMany(p => p.Declarations)
                 .HasForeignKey(d => d.UserId)
@@ -57,7 +62,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Monitoring>(entity =>
         {
-            entity.HasKey(e => e.MonitoringId).HasName("PK__Monitori__CAC3C0571219CFC3");
+            entity.HasKey(e => e.MonitoringId).HasName("PK__Monitori__CAC3C0578827507A");
 
             entity.ToTable("Monitoring");
 
@@ -84,7 +89,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A380029430C");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A3896ADB98F");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Date).HasColumnType("datetime");
@@ -109,7 +114,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CD47845DD9");
+            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6CD45AD605F");
 
             entity.Property(e => e.Category).HasMaxLength(50);
             entity.Property(e => e.CountryOfOrigin)
@@ -132,7 +137,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Report>(entity =>
         {
-            entity.HasKey(e => e.ReportId).HasName("PK__Reports__D5BD48051D34EFFD");
+            entity.HasKey(e => e.ReportId).HasName("PK__Reports__D5BD4805A2E6DE6E");
 
             entity.Property(e => e.Content).HasColumnType("text");
             entity.Property(e => e.CreateAt).HasColumnType("datetime");
@@ -148,7 +153,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1AB5341C21");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1AB1E6EE87");
 
             entity.Property(e => e.RoleId).ValueGeneratedNever();
             entity.Property(e => e.RoleName)
@@ -158,7 +163,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<RoleDetail>(entity =>
         {
-            entity.HasKey(e => e.RoleDetailsId).HasName("PK__RoleDeta__10F774D5EB8EADC9");
+            entity.HasKey(e => e.RoleDetailsId).HasName("PK__RoleDeta__10F774D5CDDC7915");
 
             entity.Property(e => e.Address)
                 .HasMaxLength(255)
@@ -175,7 +180,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<Shipment>(entity =>
         {
-            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__5CAD37ED28D69E31");
+            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__5CAD37EDCC779865");
 
             entity.ToTable("Shipment");
 
@@ -202,7 +207,7 @@ public partial class CMSDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CEF3C7E10");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4C1F494ABD");
 
             entity.Property(e => e.CreateAt).HasColumnType("datetime");
             entity.Property(e => e.CreateDate).HasColumnType("datetime");

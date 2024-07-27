@@ -88,7 +88,7 @@ namespace Customs_Management_System.Repository
             try
             {
                 // Check if UserId exists
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId);
+                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId && u.UserRoleId==2);
                 if (!userExists)
                 {
                     throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
@@ -155,7 +155,7 @@ namespace Customs_Management_System.Repository
                 throw new Exception($"An unexpected error occurred. Details: {e.Message}");
             }
         }
-
+         
         public async Task<List<MonitoringDto>> GetMonitoringsAsync()
         {
             try
@@ -192,7 +192,6 @@ namespace Customs_Management_System.Repository
 
 
         // for Report part 
-
 
         public async Task CreateReportAsync(ReportDto reportDto)
         {
@@ -237,7 +236,6 @@ namespace Customs_Management_System.Repository
             await _context.Reports.AddAsync(report);
             await _context.SaveChangesAsync();
         }
-
 
 
 
@@ -394,6 +392,82 @@ namespace Customs_Management_System.Repository
         }
 
 
+
+        // -------------------------------------------------Exporter part ---------------------------------
+        public async Task<string> CreateDeclarationExporter(DeclarationDto declarationDto)
+        {
+            try
+            {
+                // Check if UserId exists
+                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId);
+                if (!userExists)
+                {
+                    throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
+                }
+
+                var declaration = new Declaration
+                {
+                    UserId = declarationDto.UserId,
+                    DeclarationDate = declarationDto.DeclarationDate,
+                    Status = declarationDto.Status,
+                    Products = declarationDto.Products.Select(p => new Product
+                    {
+                        ProductName = p.ProductName,
+                        Quantity = p.Quantity,
+                        Weight = p.Weight,
+                        CountryOfOrigin = p.CountryOfOrigin,
+                        Hscode = p.Hscode,
+                        DeclarationId = p.DeclarationId
+                    }).ToList(),
+                    Shipments = declarationDto.Shipments.Select(s => new Shipment
+                    {
+                        MethodOfShipment = s.MethodOfShipment,
+                        PortOfDeparture = s.PortOfDeparture,
+                        PortOfDestination = s.PortOfDestination,
+                        DepartureDate = s.DepartureDate,
+                        ArrivalDate = s.ArrivalDate
+                    }).ToList()
+                };
+
+                await _context.Declarations.AddAsync(declaration);
+                await _context.SaveChangesAsync();
+
+                // Create corresponding monitoring record
+                var monitoring = new Monitoring
+                {
+                    DeclarationId = declaration.DeclarationId,
+                    MethodOfShipment = declarationDto.Shipments.First().MethodOfShipment,
+                    PortOfDeparture = declarationDto.Shipments.First().PortOfDeparture,
+                    PortOfDestination = declarationDto.Shipments.First().PortOfDestination,
+                    DepartureDate = declarationDto.Shipments.First().DepartureDate,
+                    ArrivalDate = declarationDto.Shipments.First().ArrivalDate,
+                    Status = "Pending"
+                };
+
+                await _context.Monitorings.AddAsync(monitoring);
+                await _context.SaveChangesAsync();
+
+                // Create corresponding report record
+                var report = new Report
+                {
+                    UserId = declarationDto.UserId,
+                    ReportType = "Declaration Created",
+                    Content = $"Declaration ID {declaration.DeclarationId} created.",
+                    CreateAt = DateTime.UtcNow
+                };
+
+                await _context.Reports.AddAsync(report);
+                await _context.SaveChangesAsync();
+
+                return "Declaration Created Successfully";
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"An unexpected error occurred. Details: {e.Message}");
+            }
+
+        }
+            
     }
 }
 

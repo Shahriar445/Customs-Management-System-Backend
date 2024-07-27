@@ -35,6 +35,7 @@ namespace Customs_Management_System.Controllers
                                                             6. for Dashboard -- remain
          
          */
+
         [HttpPost("/CreateDeclarationImporter")]
         public async Task<IActionResult> CreateDeclaration(DeclarationDto declarationDto)
         {
@@ -177,19 +178,10 @@ namespace Customs_Management_System.Controllers
         }
 
 
-
-
-
-
-
-
-
-
-
         //--------------------------------------------------------------dashboard api 
 
-        [HttpGet("dashboard-overview")]
-        private async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
+        [HttpGet("dashboardOverview")]
+        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
         {
             try
             {
@@ -200,6 +192,35 @@ namespace Customs_Management_System.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+        }
+
+
+
+        //------------------------------------------------------------------Exporter api --------------------------------------------------------------------------------------------------
+
+
+        [HttpPost("/Create-Declaration-Exporter")]
+        public async Task<IActionResult> CreateDeclarationExporter(DeclarationDto declarationDto)
+        {
+            try
+            {
+                var result = await _customsRepo.CreateDeclarationExporter(declarationDto);
+                return StatusCode(StatusCodes.Status201Created, result);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+            }
+        }
+
+
+        //get all users 
+
+        [HttpGet]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _context.Users.Take(1000).ToListAsync();
+            return Ok(users);
         }
 
     };

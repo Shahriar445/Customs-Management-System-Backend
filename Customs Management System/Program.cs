@@ -30,6 +30,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Add logging
+builder.Logging.AddConsole();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

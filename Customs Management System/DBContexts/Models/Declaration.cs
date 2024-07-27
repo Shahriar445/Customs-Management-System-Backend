@@ -13,11 +13,15 @@ public partial class Declaration
 
     public string Status { get; set; } = null!;
 
+    public int RoleId { get; set; }
+
     public virtual ICollection<Monitoring> Monitorings { get; set; } = new List<Monitoring>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+
+    public virtual Role Role { get; set; } = null!;
 
     public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
 
