@@ -167,6 +167,8 @@ namespace Customs_Management_System.Repository
                     .ThenInclude(d => d.Shipments)
                     .Select(m => new MonitoringDto
                     {
+                        
+                        DeclarationId = m.DeclarationId,
                         MethodOfShipment = m.MethodOfShipment,
                         PortOfDeparture = m.PortOfDeparture,
                         PortOfDestination = m.PortOfDestination,

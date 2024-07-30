@@ -197,7 +197,15 @@ namespace Customs_Management_System.Controllers
 
 
         //------------------------------------------------------------------Exporter api --------------------------------------------------------------------------------------------------
+        /*                              Total  api 
+                                                           1. Declaration submit---- 
+                                                           2. get all Declaration--- 
+                                                           3. payment submit --- 
+                                                           4. get monitoring list--
+                                                           5. create Report --
+                                                           6. Dashboard -- 
 
+        */
 
         [HttpPost("/Create-Declaration-Exporter")]
         public async Task<IActionResult> CreateDeclarationExporter(DeclarationDto declarationDto)

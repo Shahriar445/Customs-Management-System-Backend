@@ -87,6 +87,28 @@ namespace Customs_Management_System.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDto loginRequest)
         {
+            // Special case for admin login
+            if (loginRequest.UserName.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                // Check hardcoded admin password (you may want to store this securely in your configuration)
+                if (loginRequest.Password == "admin")
+                {
+                    var responser = new LoginResponseDto
+                    {
+                        UserName = "admin",
+                        Role = "Admin"
+                    };
+
+                    _logger.LogInformation("Admin logged in successfully");
+                    return Ok(responser);
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid login attempt for admin");
+                    return Unauthorized("Invalid username or password.");
+                }
+            }
+
             // Retrieve user by username
             var user = await _context.Users
                 .Where(u => u.UserName == loginRequest.UserName)
@@ -127,6 +149,7 @@ namespace Customs_Management_System.Controllers
             _logger.LogInformation("User logged in successfully: {UserName}", user.UserName);
             return Ok(response);
         }
+
 
 
     }

@@ -9,6 +9,7 @@ namespace Customs_Management_System.DTOs
     {
 
 
+        public int DeclarationId { get; set; }
         
         public string? MethodOfShipment { get; set; }
         public string? PortOfDeparture { get; set; }
