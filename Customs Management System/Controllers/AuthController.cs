@@ -20,7 +20,6 @@ namespace Customs_Management_System.Controllers
             _context = context;
             _logger = logger;
         }
-
         [HttpPost("register")]
         public async Task<IActionResult> Register(UserRegistrationDto userDto)
         {
@@ -31,8 +30,7 @@ namespace Customs_Management_System.Controllers
             int roleId;
             switch (userDto.Role.Trim().ToLower())
             {
-                
-                case "customs_officer":
+                case "customs officer":
                     roleId = 4;
                     break;
                 case "importer":
@@ -64,7 +62,8 @@ namespace Customs_Management_System.Controllers
                 Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password), // Hash password
                 UserRoleId = roleId,
                 CreateDate = DateTime.UtcNow,
-                CreateAt = DateTime.UtcNow
+                CreateAt = DateTime.UtcNow,
+                IsActive = false // Set IsActive to false initially
             };
 
             // Add user to the context
@@ -74,7 +73,7 @@ namespace Customs_Management_System.Controllers
             {
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("User registered successfully: {UserName}", user.UserName);
-                return Ok("User registered successfully");
+                return Ok("User registered successfully, Please wait for Admin Approval");
             }
             catch (Exception ex)
             {
@@ -83,72 +82,86 @@ namespace Customs_Management_System.Controllers
             }
         }
 
-
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDto loginRequest)
         {
-            // Special case for admin login
-            if (loginRequest.UserName.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                // Check hardcoded admin password (you may want to store this securely in your configuration)
-                if (loginRequest.Password == "admin")
+                // Check for admin login
+                if (loginRequest.UserName.Equals("admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    var responser = new LoginResponseDto
+                    if (loginRequest.Password == "admin")
+
                     {
-                        UserName = "admin",
-                        Role = "Admin"
-                    };
+                        if (loginRequest.Role=="admin")
+                        {
+                            var responses = new LoginResponseDto
+                            {
+                                UserName = "admin",
+                                Role = "Admin"
+                            };
 
-                    _logger.LogInformation("Admin logged in successfully");
-                    return Ok(responser);
+                            _logger.LogInformation("Admin logged in successfully");
+                            return Ok(responses);
+                        }
+                       
+
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid login attempt for admin");
+                        return Unauthorized(new { message = "Invalid username or password." });
+                    }
                 }
-                else
+
+                // Check for regular user login
+                var user = await _context.Users
+                    .Where(u => u.UserName == loginRequest.UserName)
+                    .FirstOrDefaultAsync();
+
+                if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
                 {
-                    _logger.LogWarning("Invalid login attempt for admin");
-                    return Unauthorized("Invalid username or password.");
+                    _logger.LogWarning("Invalid login attempt for username: {UserName}", loginRequest.UserName);
+                    return Unauthorized(new { message = "Invalid username or password." });
                 }
+
+                var role = await _context.Roles
+                    .Where(r => r.RoleId == user.UserRoleId)
+                    .Select(r => r.RoleName)
+                    .SingleOrDefaultAsync();
+
+                if (role == null)
+                {
+                    _logger.LogError("Role not found for user: {UserName}", user.UserName);
+                    return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Role not found." });
+                }
+                else if (!string.Equals(loginRequest.Role, role, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("Invalid role attempt for username: {UserName}. Expected role: {Role}, provided role: {ProvidedRole}", user.UserName, role, loginRequest.Role);
+                    return Unauthorized(new { message = "Role does not match. Please check the role provided." });
+                }
+                else if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user login attempt for username: {UserName}", loginRequest.UserName);
+                    return Unauthorized(new { message = "Your account is not active. Please contact the admin." });
+                }
+
+                var response = new LoginResponseDto
+                {
+                    UserName = user.UserName,
+                    Role = role
+                };
+
+                _logger.LogInformation("User logged in successfully: {UserName}", user.UserName);
+                return Ok(response);
             }
-
-            // Retrieve user by username
-            var user = await _context.Users
-                .Where(u => u.UserName == loginRequest.UserName)
-                .FirstOrDefaultAsync();
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
+            catch (Exception ex)
             {
-                _logger.LogWarning("Invalid login attempt for username: {UserName}", loginRequest.UserName);
-                return Unauthorized("Invalid username or password.");
+                _logger.LogError(ex, "An error occurred during login.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred during login. Please try again later." });
             }
-
-            // Retrieve user role
-            var role = await _context.Roles
-                .Where(r => r.RoleId == user.UserRoleId)
-                .Select(r => r.RoleName)
-                .SingleOrDefaultAsync();
-
-            if (role == null)
-            {
-                _logger.LogError("Role not found for user: {UserName}", user.UserName);
-                return StatusCode(StatusCodes.Status500InternalServerError, "Role not found.");
-            }
-
-            // Check if the provided role matches the user's role
-            if (!string.Equals(loginRequest.Role, role, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Invalid role attempt for username: {UserName}. Expected role: {Role}, provided role: {ProvidedRole}", user.UserName, role, loginRequest.Role);
-                return Unauthorized("Invalid role.");
-            }
-
-            // Create response DTO
-            var response = new LoginResponseDto
-            {
-                UserName = user.UserName,
-                Role = role
-            };
-
-            _logger.LogInformation("User logged in successfully: {UserName}", user.UserName);
-            return Ok(response);
         }
+
 
 
 
