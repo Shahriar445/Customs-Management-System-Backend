@@ -5,6 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BCrypt.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Customs_Management_System.Controllers
 {
@@ -14,12 +19,15 @@ namespace Customs_Management_System.Controllers
     {
         private readonly CMSDbContext _context;
         private readonly ILogger<AuthController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(CMSDbContext context, ILogger<AuthController> logger)
+        public AuthController(CMSDbContext context, ILogger<AuthController> logger, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
+            _configuration = configuration;
         }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(UserRegistrationDto userDto)
         {
@@ -90,22 +98,17 @@ namespace Customs_Management_System.Controllers
                 // Check for admin login
                 if (loginRequest.UserName.Equals("admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (loginRequest.Password == "admin")
-
+                    if (loginRequest.Password == "admin" && loginRequest.Role == "admin")
                     {
-                        if (loginRequest.Role=="admin")
+                        var responses = new LoginResponseDto
                         {
-                            var responses = new LoginResponseDto
-                            {
-                                UserName = "admin",
-                                Role = "Admin"
-                            };
+                            UserName = "admin",
+                            Role = "Admin",
+                            Token = GenerateJwtToken("admin", "Admin") // Generate token for admin
+                        };
 
-                            _logger.LogInformation("Admin logged in successfully");
-                            return Ok(responses);
-                        }
-                       
-
+                        _logger.LogInformation("Admin logged in successfully");
+                        return Ok(responses);
                     }
                     else
                     {
@@ -149,7 +152,8 @@ namespace Customs_Management_System.Controllers
                 var response = new LoginResponseDto
                 {
                     UserName = user.UserName,
-                    Role = role
+                    Role = role,
+                    Token = GenerateJwtToken(user.UserName, role) // Generate token for regular user
                 };
 
                 _logger.LogInformation("User logged in successfully: {UserName}", user.UserName);
@@ -162,8 +166,29 @@ namespace Customs_Management_System.Controllers
             }
         }
 
+        private string GenerateJwtToken(string username, string role)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
 
+            var claims = new[]
+            {
+        new Claim(JwtRegisteredClaimNames.Sub, username),
+        new Claim("role", role),  // Use "role" instead of ClaimTypes.Role
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
 
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings["ExpiresInMinutes"])),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
-}
+    }

@@ -6,11 +6,12 @@ using Customs_Management_System.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Authorization;
 namespace Customs_Management_System.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class CMSController : ControllerBase
     {
         private readonly CMSDbContext _context;
@@ -31,8 +32,7 @@ namespace Customs_Management_System.Controllers
                                                             2. get all Declaration--- done
                                                             3. payment submit --- bug
                                                             4. get monitoring list-- done
-                                                            5. create Report -- bug
-                                                            6. for Dashboard -- remain
+                                                            5. for Dashboard -- done
          
          */
 
@@ -49,6 +49,7 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
+        
         [HttpGet("GetDeclarationsImporter")]
         public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarations()
         {
@@ -63,6 +64,7 @@ namespace Customs_Management_System.Controllers
                         UserId = d.UserId,
                         DeclarationDate = d.DeclarationDate,
                         Status = d.Status,
+                        
                         // Add other properties from Products and Shipments as needed
                     })
                     .ToListAsync();
@@ -74,6 +76,7 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
+        [Authorize(Roles = "Importer")]
         [HttpGet("GetMonitoringImporter")]
         public async Task<ActionResult<List<MonitoringDto>>> GetMonitorings()
         {
@@ -87,21 +90,38 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
-
-
-        [HttpPost("CreateReportImporter")]
-        public async Task<IActionResult> CreateReport([FromBody] ReportDto reportDto)
+        [HttpGet("GetProductsByCategory")]
+        public async Task<IActionResult> GetProductsByCategory([FromQuery] string category)
         {
-            try
+            if (string.IsNullOrWhiteSpace(category))
             {
-                await _customsRepo.CreateReportAsync(reportDto);
-                return StatusCode(201, "Report created successfully");
+                return BadRequest("Category is required");
             }
-            catch (Exception e)
+
+            var products = await _customsRepo.GetProductsByCategoryAsync(category);
+
+            if (products == null || !products.Any())
             {
-                _logger.LogError(e, "Error creating report");
-                return StatusCode(500, "An error occurred while creating the report");
+                return NotFound("No products found for the selected category");
             }
+
+            return Ok(products);
+        }
+        //product price and category 
+        [HttpGet("GetPrice")]
+        public async Task<IActionResult> GetPrice(string category, string productName)
+        {
+            var price = await _context.ProductPrices
+                .Where(p => p.Category == category && p.ProductName == productName)
+                .Select(p => p.Price)
+                .FirstOrDefaultAsync();
+
+            if (price == 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(price);
         }
 
         // For Payment & Report
@@ -157,29 +177,8 @@ namespace Customs_Management_System.Controllers
 
 
 
-
-
-
-
-
-
-        [HttpGet("reportsByRole")]
-        public async Task<ActionResult<IEnumerable<ReportDto>>> GetReportsByRole()
-        {
-            try
-            {
-                var reports = await _customsRepo.GetReportsByRoleQueryable();
-                return Ok(reports);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-
-        //--------------------------------------------------------------dashboard api 
-
+        //-------------------------------------------------------------- importer dashboard api 
+        
         [HttpGet("dashboardOverview")]
         public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
         {
@@ -198,7 +197,7 @@ namespace Customs_Management_System.Controllers
 
         //------------------------------------------------------------------Exporter api --------------------------------------------------------------------------------------------------
         /*                              Total  api 
-                                                           1. Declaration submit---- 
+                                                           1. Declaration submit---- done
                                                            2. get all Declaration--- 
                                                            3. payment submit --- 
                                                            4. get monitoring list--
@@ -207,8 +206,23 @@ namespace Customs_Management_System.Controllers
 
         */
 
+
+        [HttpGet("/Exporter_Dashboard")]
+        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForExporter()
+        {
+            try
+            {
+                var dashboardOverview = await _customsRepo.GetDashboardOverviewExporter();
+                return Ok(dashboardOverview);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         [HttpPost("/Create-Declaration-Exporter")]
-        public async Task<IActionResult> CreateDeclarationExporter(DeclarationDto declarationDto)
+        public async Task<IActionResult> CreateDeclarationExporters(DeclarationDto declarationDto)
         {
             try
             {
@@ -222,6 +236,65 @@ namespace Customs_Management_System.Controllers
         }
 
 
+
+        [HttpGet("/Exporter-monitoring")]
+        public async Task<ActionResult<ExporterMonitorDto>> GetMonitoringOverview()
+        {
+            try
+            {
+                // Role ID for Exporters
+                int exporterRoleId = 3;
+
+                // Get the UserIds of all users with RoleId == 3
+                var exporterUserIds = await _context.Users
+                                                    .Where(u => u.UserRoleId == exporterRoleId)
+                                                    .Select(u => u.UserId)
+                                                    .ToListAsync();
+
+                if (exporterUserIds == null || !exporterUserIds.Any())
+                {
+                    return NotFound("No users found with the role of Exporter.");
+                }
+
+                // Total processed shipments for Exporters
+                int processedShipments = await _context.Declarations
+                                                        .Where(d => d.IsActive == true && exporterUserIds.Contains(d.UserId))
+                                                        .CountAsync();
+
+                // Total pending shipments for Exporters
+                int pendingShipments = await _context.Declarations
+                                                     .Where(d => d.IsActive == false && exporterUserIds.Contains(d.UserId))
+                                                     .CountAsync();
+
+                // Define a custom status based on your criteria
+                string currentStatus = processedShipments > 0 ? "Operational" : "Not Operational";
+
+                // Example clearance rate calculation
+                double clearanceRate = (processedShipments + pendingShipments) > 0
+                    ? (double)processedShipments / (processedShipments + pendingShipments) * 100
+                    : 0.0;
+
+                var monitoringData = new ExporterMonitorDto
+                {
+                    ShipmentsProcessed = processedShipments,
+                    ShipmentPending = pendingShipments,
+                    CurrentStatus = currentStatus,
+                    CustomsClearanceRate = clearanceRate
+                };
+
+                return Ok(monitoringData);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception details (optional)
+                // _logger.LogError(ex, "An error occurred while fetching the monitoring overview.");
+
+                // Return a 500 Internal Server Error with a custom message
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+
         //get all users 
 
         [HttpGet]
@@ -231,16 +304,20 @@ namespace Customs_Management_System.Controllers
             return Ok(users);
         }
 
-        //--------------------------------------work on admin api 
 
+
+        //--------------------------------------work on admin api -----------------------------------------------------------------
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("user-counts")]
+        
         public async Task<IActionResult> GetUserCounts()
         {
             try
             {
-                var totalExporters = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "exporter");
-                var totalImporters = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "importer");
-                var totalCustomsOfficers = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "customs officer");
+                var totalExporters = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "exporter" && u.IsActive==true);
+                var totalImporters = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "importer"&& u.IsActive==true);
+                var totalCustomsOfficers = await _context.Users.CountAsync(u => u.UserRole.RoleName.ToLower() == "customs officer" && u.IsActive == true);
 
 
                 var activeUsers = await _context.Users.CountAsync(u => u.IsActive==true);
@@ -265,6 +342,7 @@ namespace Customs_Management_System.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("pending")]
         public async Task<IActionResult> GetPendingUsers()
         {
@@ -283,9 +361,12 @@ namespace Customs_Management_System.Controllers
             return Ok(pendingUsers);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("active")]
+       
         public async Task<IActionResult> GetActiveUsers()
         {
+           
             var activeUsers = await _context.Users
                 .Where(u => u.IsActive)
                 .Select(u => new
@@ -301,7 +382,10 @@ namespace Customs_Management_System.Controllers
             return Ok(activeUsers);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("approve-user/{userId}")]
+        
+
         public async Task<IActionResult> ApproveUser(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -317,7 +401,10 @@ namespace Customs_Management_System.Controllers
             return Ok(new { message = "User approved successfully" });
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("stop-role/{userId}")]
+       
+
         public async Task<IActionResult> StopUserRole(int userId)
         {
             // Fetch the user from the database
@@ -335,6 +422,55 @@ namespace Customs_Management_System.Controllers
 
             return Ok("User role stopped successfully. User moved back to pending approval.");
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("user-reports")]
+       
+
+        public async Task<IActionResult> GetUserReports(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch declarations and payments for the user
+            var declarations = await _context.Declarations
+                .Where(d => d.UserId == userId)
+                .ToListAsync();
+
+            var payments = await _context.Payments
+                .Where(p => p.UserId == userId)
+                .ToListAsync();
+
+            var report = new
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Role = await _context.Roles.Where(r => r.RoleId == user.UserRoleId).Select(r => r.RoleName).FirstOrDefaultAsync(),
+                Declarations = declarations.Select(d => new
+                {
+                    d.DeclarationId,
+                    d.DeclarationDate,
+                    IsActive = d.IsActive ? 1 : 0
+                }),
+                Payments = payments.Select(p => new
+                {
+                    p.PaymentId,
+                    p.DeclarationId,
+                    p.Amount,
+                    p.Date,
+                    p.Status
+                })
+            };
+
+            return Ok(report);
+        }
+
+
+
+
 
     };
 }

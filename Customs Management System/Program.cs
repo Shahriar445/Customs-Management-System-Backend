@@ -1,5 +1,8 @@
 using Customs_Management_System.DbContexts;
 using Customs_Management_System.DependencyContainer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +10,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Register DbContext
 builder.Services.AddDbContext<CMSDbContext>();
+
+// Configure JWT Bearer Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Use "Jwt" to match appsettings.json
+            ValidAudience = builder.Configuration["Jwt:Audience"], // Use "Jwt" to match appsettings.json
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])), // Use "Jwt" to match appsettings.json
+            ClockSkew = TimeSpan.Zero // Optional: reduce token expiration tolerance
+        };
+    });
 
 // Register repositories and services through Dependency Injection
 DependencyInversion.RegisterServices(builder.Services);
@@ -28,7 +48,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("Admin"));
+});
+
+
 var app = builder.Build();
+
 
 // Add logging
 builder.Logging.AddConsole();

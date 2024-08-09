@@ -24,6 +24,8 @@ public partial class CMSDbContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<ProductPrice> ProductPrices { get; set; }
+
     public virtual DbSet<Report> Reports { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -48,11 +50,6 @@ public partial class CMSDbContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-
-            entity.HasOne(d => d.Role).WithMany(p => p.Declarations)
-                .HasForeignKey(d => d.RoleId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_RoleId_Declarations");
 
             entity.HasOne(d => d.User).WithMany(p => p.Declarations)
                 .HasForeignKey(d => d.UserId)
@@ -127,12 +124,22 @@ public partial class CMSDbContext : DbContext
             entity.Property(e => e.ProductName)
                 .HasMaxLength(255)
                 .IsUnicode(false);
+            entity.Property(e => e.TotalPrice).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Weight).HasColumnType("decimal(10, 2)");
 
             entity.HasOne(d => d.Declaration).WithMany(p => p.Products)
                 .HasForeignKey(d => d.DeclarationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DeclarationId_Products");
+        });
+
+        modelBuilder.Entity<ProductPrice>(entity =>
+        {
+            entity.HasKey(e => e.PriceId).HasName("PK__ProductP__49575BAF6F01EDC7");
+
+            entity.Property(e => e.Category).HasMaxLength(255);
+            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ProductName).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Report>(entity =>

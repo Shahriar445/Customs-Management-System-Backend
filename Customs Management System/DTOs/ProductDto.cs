@@ -25,6 +25,7 @@ namespace Customs_Management_System.DTOs
 
         public string? Hscode { get; set; }
         public string? Category { get; set; }
+        public decimal? TotalPrice { get; set; }
 
 
     }

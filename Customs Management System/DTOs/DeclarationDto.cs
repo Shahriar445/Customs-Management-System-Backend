@@ -11,6 +11,7 @@ namespace Customs_Management_System.DTOs
         public int DeclarationId { get; set; }
         public DateTime DeclarationDate { get; set; }
         public string Status { get; set; }
+        public bool IsActive {  get; set; }
         public List<ProductDto> Products { get; set; }
         public List<ShipmentDto> Shipments { get; set; }
 

@@ -9,26 +9,25 @@ namespace Customs_Management_System.IRepository
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
       
         Task<List<MonitoringDto>> GetMonitoringsAsync( );
+        Task<IEnumerable<ProductPriceDto>> GetProductsByCategoryAsync(string category);
 
-        // report part importer
-        Task CreateReportAsync(ReportDto reportDto);
 
-        Task<IEnumerable<ReportDto>> GetReportsByRoleQueryable();
 
         //payment
         Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId);
         Task AddPaymentAsync(Payment payment);
 
 
+       
+
         //dashboard 
-        Task<int> GetTotalDeclarationsAsync(int userId);
-        Task<int> GetPendingPaymentsAsync(int userId);
-        Task<int> GetShipmentMonitoringAsync(int userId);
-        Task<int> GetGeneratedReportsAsync(int userId);
+       
         Task<DashboardOverViewDto> GetDashboardOverviewAsync();
 
         // --------------------Exporter part  
 
+      
+        Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter();
         Task<string> CreateDeclarationExporter(DeclarationDto declaration);
 
 

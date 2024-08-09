@@ -20,6 +20,25 @@ namespace Customs_Management_System.Repository
             _configuration = configuration;
         }
 
+        public async Task<IEnumerable<ProductPriceDto>> GetProductsByCategoryAsync(string category)
+        {
+            var sql = "SELECT PriceId, Category, ProductName, Price " +
+                      "FROM ProductPrices " +
+                      "WHERE LOWER(Category) = LOWER(@category)";
+
+            var products = await _context.ProductPrices
+                .FromSqlRaw(sql, new SqlParameter("@category", category))
+                .Select(p => new ProductPriceDto
+                {
+                    PriceId = p.PriceId,
+                    Category = p.Category,
+                    ProductName = p.ProductName,
+                    Price = (decimal)p.Price
+                })
+                .ToListAsync();
+
+            return products;
+        }
 
         /*
         public async Task<string> CreateDeclarationAsync(DeclarationDto declarationDto)
@@ -88,7 +107,7 @@ namespace Customs_Management_System.Repository
             try
             {
                 // Check if UserId exists
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId && u.UserRoleId==2);
+                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId && u.UserRoleId == 2);
                 if (!userExists)
                 {
                     throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
@@ -99,14 +118,17 @@ namespace Customs_Management_System.Repository
                     UserId = declarationDto.UserId,
                     DeclarationDate = declarationDto.DeclarationDate,
                     Status = declarationDto.Status,
+                    IsActive= declarationDto.IsActive,
                     Products = declarationDto.Products.Select(p => new Product
                     {
                         ProductName = p.ProductName,
+                        Category = p.Category, // Add this line to include the category
                         Quantity = p.Quantity,
                         Weight = p.Weight,
                         CountryOfOrigin = p.CountryOfOrigin,
                         Hscode = p.Hscode,
-                        DeclarationId = p.DeclarationId
+                        DeclarationId = p.DeclarationId,
+                        TotalPrice=p.TotalPrice
                     }).ToList(),
                     Shipments = declarationDto.Shipments.Select(s => new Shipment
                     {
@@ -136,18 +158,6 @@ namespace Customs_Management_System.Repository
                 await _context.Monitorings.AddAsync(monitoring);
                 await _context.SaveChangesAsync();
 
-                // Create corresponding report record
-                var report = new Report
-                {
-                    UserId = declarationDto.UserId,
-                    ReportType = "Declaration Created",
-                    Content = $"Declaration ID {declaration.DeclarationId} created.",
-                    CreateAt = DateTime.UtcNow
-                };
-
-                await _context.Reports.AddAsync(report);
-                await _context.SaveChangesAsync();
-
                 return "Declaration Created Successfully";
             }
             catch (Exception e)
@@ -155,7 +165,7 @@ namespace Customs_Management_System.Repository
                 throw new Exception($"An unexpected error occurred. Details: {e.Message}");
             }
         }
-         
+
         public async Task<List<MonitoringDto>> GetMonitoringsAsync()
         {
             try
@@ -193,131 +203,9 @@ namespace Customs_Management_System.Repository
 
 
 
-        // for Report part 
-
-        public async Task CreateReportAsync(ReportDto reportDto)
-        {
-            // First, create the Declaration and related entities
-            var declaration = new Declaration
-            {
-                UserId = reportDto.Declaration.UserId,
-                DeclarationDate = reportDto.Declaration.DeclarationDate,
-                Status = reportDto.Declaration.Status,
-                Products = reportDto.Declaration.Products.Select(p => new Product
-                {
-                    ProductName = p.ProductName,
-                    Quantity = p.Quantity,
-                    Weight = p.Weight,
-                    CountryOfOrigin = p.CountryOfOrigin,
-                    Hscode = p.Hscode,
-                    Category = p.Category
-                }).ToList(),
-                Shipments = reportDto.Declaration.Shipments.Select(s => new Shipment
-                {
-                    MethodOfShipment = s.MethodOfShipment,
-                    PortOfDeparture = s.PortOfDeparture,
-                    PortOfDestination = s.PortOfDestination,
-                    DepartureDate = s.DepartureDate,
-                    ArrivalDate = s.ArrivalDate
-                }).ToList()
-            };
-
-            await _context.Declarations.AddAsync(declaration);
-            await _context.SaveChangesAsync();
-
-            // Then, create the Report and associate it with the Declaration
-            var report = new Report
-            {
-                UserId = reportDto.UserId,
-                ReportType = reportDto.ReportType,
-                Content = reportDto.Content,
-                CreateAt = DateTime.UtcNow,
-                 // assuming you have this field in Report model
-            };
-
-            await _context.Reports.AddAsync(report);
-            await _context.SaveChangesAsync();
-        }
 
 
-
-
-        // Get Report by id -- no need 
-
-        public async Task<IEnumerable<ReportDto>> GetReportsByRoleQueryable()
-        {
-            int roleId = 1;
-            List<ReportDto> reportDtos = new List<ReportDto>();
-
-            try
-            {
-                var roleIdParam = new SqlParameter("@RoleId", roleId);
-
-                // Execute stored procedure
-                var reports = await _context.Reports
-                    .FromSqlRaw("EXECUTE dbo.GetReportsByRoleId @RoleId", roleIdParam)
-                    .ToListAsync();
-
-                foreach (var report in reports)
-                {
-                    // Fetch related declaration details
-                    var declarations = await _context.Declarations
-                        .Where(d => d.UserId == report.UserId)
-                        .Include(d => d.Products)
-                        .Include(d => d.Shipments)
-                        .ToListAsync();
-
-                    // Map to DeclarationDto
-                    var declarationDtos = declarations.Select(d => new DeclarationDto
-                    {
-                        UserId = d.UserId,
-                        DeclarationId = d.DeclarationId,
-                        DeclarationDate = d.DeclarationDate,
-                        Status = d.Status,
-                        Products = d.Products.Select(p => new ProductDto
-                        {
-                            ProductName = p.ProductName,
-                            Quantity = p.Quantity,
-                            Weight = p.Weight,
-                            CountryOfOrigin = p.CountryOfOrigin,
-                            Hscode = p.Hscode,
-                            Category = p.Category
-                        }).ToList(),
-                        Shipments = d.Shipments.Select(s => new ShipmentDto
-                        {
-                            ShipmentId = s.ShipmentId,
-                            MethodOfShipment = s.MethodOfShipment,
-                            PortOfDeparture = s.PortOfDeparture,
-                            PortOfDestination = s.PortOfDestination,
-                            DepartureDate = s.DepartureDate,
-                            ArrivalDate = s.ArrivalDate
-                        }).ToList()
-                    }).ToList();
-
-                    // Create ReportDto
-                    var reportDto = new ReportDto
-                    {
-                        ReportId = report.ReportId,
-                        UserId = report.UserId,
-                        ReportType = report.ReportType,
-                        Content = report.Content,
-                        CreateAt = report.CreateAt,
-                        Declaration = declarationDtos.FirstOrDefault() // Adjust based on your logic
-                    };
-
-                    reportDtos.Add(reportDto);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions as needed
-                Console.Error.WriteLine($"Error fetching reports: {ex.Message}");
-            }
-
-            return reportDtos;
-        }
-
-
+          
         // payment 
         public async Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId)
         {
@@ -333,29 +221,7 @@ namespace Customs_Management_System.Repository
             await _context.SaveChangesAsync();
         }
 
-        //-----------For Dashboard overView
-
-        public async Task<int> GetTotalDeclarationsAsync(int userId)
-        {
-            return await _context.Declarations.CountAsync(d => d.UserId == userId);
-        }
-
-        public async Task<int> GetPendingPaymentsAsync(int userId)
-        {
-            return await _context.Payments.CountAsync(p => p.UserId == userId && p.Status == "Pending");
-        }
-
-        public async Task<int> GetShipmentMonitoringAsync(int userId)
-        {
-            return await _context.Shipments
-                .Include(s => s.Declaration)
-                .CountAsync(s => s.Declaration.UserId == userId);
-        }
-
-        public async Task<int> GetGeneratedReportsAsync(int userId)
-        {
-            return await _context.Reports.CountAsync(r => r.UserId == userId);
-        }
+        //-----------For Dashboard overView importer
 
         public async Task<DashboardOverViewDto> GetDashboardOverviewAsync()
         {
@@ -376,15 +242,11 @@ namespace Customs_Management_System.Repository
                     .Include(s => s.Declaration)
                     .CountAsync(s => importerUsers.Select(u => u.UserId).Contains(s.Declaration.UserId));
 
-                int generatedReports = await _context.Reports
-                    .CountAsync(r => importerUsers.Select(u => u.UserId).Contains(r.UserId));
-
                 return new DashboardOverViewDto
                 {
                     TotalDeclarations = totalDeclarations,
                     PendingPayments = pendingPayments,
-                    ShipmentMonitoring = shipmentMonitoring,
-                    GeneratedReports = generatedReports
+                    ShipmentMonitoring = shipmentMonitoring
                 };
             }
             catch (Exception ex)
@@ -396,6 +258,38 @@ namespace Customs_Management_System.Repository
 
 
         // -------------------------------------------------Exporter part ---------------------------------
+       public async Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter()
+        {
+            try
+            {
+                // Find users with RoleId == 3 (Exporter)
+                var ExporterUsers = await _context.Users
+                    .Where(u => u.UserRoleId == 3)
+                    .ToListAsync();
+
+                int totalDeclarations = await _context.Declarations
+                    .CountAsync(d => ExporterUsers.Select(u => u.UserId).Contains(d.UserId));
+
+                int pendingPayments = await _context.Payments
+                    .CountAsync(p => ExporterUsers.Select(u => u.UserId).Contains(p.UserId) && p.Status == "Pending");
+
+                int shipmentMonitoring = await _context.Shipments
+                    .Include(s => s.Declaration)
+                    .CountAsync(s => ExporterUsers.Select(u => u.UserId).Contains(s.Declaration.UserId));
+
+                return new DashboardOverViewExporterDto
+                {
+                    TotalDeclarations = totalDeclarations,
+                    PendingPayments = pendingPayments,
+                    ShipmentMonitoring = shipmentMonitoring
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An unexpected error occurred while fetching dashboard overview: {ex.Message}");
+            }
+        }
+
         public async Task<string> CreateDeclarationExporter(DeclarationDto declarationDto)
         {
             try
@@ -419,7 +313,8 @@ namespace Customs_Management_System.Repository
                         Weight = p.Weight,
                         CountryOfOrigin = p.CountryOfOrigin,
                         Hscode = p.Hscode,
-                        DeclarationId = p.DeclarationId
+                        DeclarationId = p.DeclarationId,
+                        TotalPrice= p.TotalPrice,
                     }).ToList(),
                     Shipments = declarationDto.Shipments.Select(s => new Shipment
                     {
@@ -449,17 +344,6 @@ namespace Customs_Management_System.Repository
                 await _context.Monitorings.AddAsync(monitoring);
                 await _context.SaveChangesAsync();
 
-                // Create corresponding report record
-                var report = new Report
-                {
-                    UserId = declarationDto.UserId,
-                    ReportType = "Declaration Created",
-                    Content = $"Declaration ID {declaration.DeclarationId} created.",
-                    CreateAt = DateTime.UtcNow
-                };
-
-                await _context.Reports.AddAsync(report);
-                await _context.SaveChangesAsync();
 
                 return "Declaration Created Successfully";
             }
@@ -469,7 +353,7 @@ namespace Customs_Management_System.Repository
             }
 
         }
-            
+
     }
 }
 
