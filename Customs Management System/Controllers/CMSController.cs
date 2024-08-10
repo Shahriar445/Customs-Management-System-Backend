@@ -469,7 +469,22 @@ namespace Customs_Management_System.Controllers
         }
 
 
+        //----------------------------------customes officer api -------------
 
+        // API for Exporters
+        [HttpGet("importer-summary")]
+        public async Task<ActionResult<CustomesDashboardSummaryDto>> GetImporterSummary()
+        {
+            var summary = await _customsRepo.GetImporterSummaryAsync();
+            return Ok(summary);
+        }
+
+        [HttpGet("exporter-summary")]
+        public async Task<ActionResult<CustomesDashboardSummaryDto>> GetExporterSummary()
+        {
+            var summary = await _customsRepo.GetExporterSummaryAsync();
+            return Ok(summary);
+        }
 
 
     };

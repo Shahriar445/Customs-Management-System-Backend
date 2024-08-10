@@ -354,6 +354,72 @@ namespace Customs_Management_System.Repository
 
         }
 
+
+
+        // Customes officer 
+
+        public async Task<CustomesDashboardSummaryDto> GetImporterSummaryAsync()
+        {
+            // Step 1: Retrieve UserIds for active Importers
+            var importerUserIds = await _context.Users
+                .Where(u => u.UserRoleId == 2 && u.IsActive)
+                .Select(u => u.UserId)
+                .ToListAsync();
+
+            // Step 2: Count active declarations for these UserIds
+            var totalDeclarations = await _context.Declarations
+                .Where(d => importerUserIds.Contains(d.UserId) )
+                .CountAsync();
+
+            // Count pending shipments for Importers
+            var pendingShipments = await _context.Shipments
+                .Where(s => s.Status == "Pending" && s.Declaration.User.UserRoleId == 2 && s.Declaration.IsActive)
+                .CountAsync();
+
+            // Count running shipments for Importers
+            var runningShipments = await _context.Shipments
+                .Where(s => s.Status == "Running" && s.Declaration.User.UserRoleId == 2 && s.Declaration.IsActive)
+                .CountAsync();
+
+            return new CustomesDashboardSummaryDto
+            {
+                TotalDeclarations = totalDeclarations,
+                PendingShipments = pendingShipments,
+                RunningShipments = runningShipments
+            };
+        }
+        public async Task<CustomesDashboardSummaryDto> GetExporterSummaryAsync()
+        {
+            // Step 1: Retrieve UserIds for active Importers
+            var exporterUserIds = await _context.Users
+                .Where(u => u.UserRoleId == 3 && u.IsActive)
+                .Select(u => u.UserId)
+                .ToListAsync();
+
+            // Step 2: Count active declarations for these UserIds
+            var totalDeclarations = await _context.Declarations
+                .Where(d => exporterUserIds.Contains(d.UserId))
+                .CountAsync();
+
+            // Count pending shipments for Exporters
+            var pendingShipments = await _context.Shipments
+                .Where(s => s.Status == "Pending" && s.Declaration.User.UserRoleId == 3 && s.Declaration.IsActive)
+                .CountAsync();
+
+            // Count running shipments for Exporters
+            var runningShipments = await _context.Shipments
+                .Where(s => s.Status == "Running" && s.Declaration.User.UserRoleId == 3 && s.Declaration.IsActive)
+                .CountAsync();
+
+            return new CustomesDashboardSummaryDto
+            {
+                TotalDeclarations = totalDeclarations,
+                PendingShipments = pendingShipments,
+                RunningShipments = runningShipments
+            };
+        }
+
+
     }
 }
 

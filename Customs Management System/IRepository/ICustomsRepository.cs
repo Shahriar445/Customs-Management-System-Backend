@@ -31,10 +31,11 @@ namespace Customs_Management_System.IRepository
         Task<string> CreateDeclarationExporter(DeclarationDto declaration);
 
 
-        //----------------------- Login & Registration ----------------
+        //----------------------- customes officer  ----------------
 
 
-
+        Task<CustomesDashboardSummaryDto> GetImporterSummaryAsync();
+        Task<CustomesDashboardSummaryDto> GetExporterSummaryAsync();
 
 
     }
