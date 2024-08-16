@@ -36,6 +36,18 @@ namespace Customs_Management_System.IRepository
 
         Task<CustomesDashboardSummaryDto> GetImporterSummaryAsync();
         Task<CustomesDashboardSummaryDto> GetExporterSummaryAsync();
+        IEnumerable<DeclarationDto> GetPendingDeclaration();
+        IEnumerable<DeclarationDto> GetRunningDeclaration();
+
+
+
+        // Customes officer Report part 
+           Task<IEnumerable<ReportDto>> GetCustomsOfficerReportsAsync();
+       
+        byte[] GeneratePdfReport(IEnumerable<ReportDto> reports, string createdBy, DateTime reportDate);
+
+        Task<IEnumerable<PaymentDto>> GetPaymentHistoryAsync();
+
 
 
     }

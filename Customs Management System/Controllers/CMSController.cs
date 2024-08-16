@@ -7,6 +7,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using System.Reflection.Metadata;
+using iTextSharp.text.pdf;
+
+
+using Document = System.Reflection.Metadata.Document;
+using iTextSharp.text;
+using System.Xml.Linq;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
+
 namespace Customs_Management_System.Controllers
 {
     [Route("api/[controller]")]
@@ -49,7 +59,7 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
             }
         }
-        
+
         [HttpGet("GetDeclarationsImporter")]
         public async Task<ActionResult<IEnumerable<DeclarationDto>>> GetDeclarations()
         {
@@ -64,7 +74,7 @@ namespace Customs_Management_System.Controllers
                         UserId = d.UserId,
                         DeclarationDate = d.DeclarationDate,
                         Status = d.Status,
-                        
+
                         // Add other properties from Products and Shipments as needed
                     })
                     .ToListAsync();
@@ -178,7 +188,7 @@ namespace Customs_Management_System.Controllers
 
 
         //-------------------------------------------------------------- importer dashboard api 
-        
+
         [HttpGet("dashboardOverview")]
         public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
         {
@@ -310,7 +320,7 @@ namespace Customs_Management_System.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("user-counts")]
-        
+
         public async Task<IActionResult> GetUserCounts()
         {
             try
@@ -329,7 +339,7 @@ namespace Customs_Management_System.Controllers
                     TotalImporters = totalImporters,
                     TotalCustomsOfficers = totalCustomsOfficers,
                     ActiveUsers = activeUsers,
-                    PendingApprovals= pendingApprovals
+                    PendingApprovals = pendingApprovals
                 };
 
                 return Ok(result);
@@ -363,10 +373,10 @@ namespace Customs_Management_System.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("active")]
-       
+
         public async Task<IActionResult> GetActiveUsers()
         {
-           
+
             var activeUsers = await _context.Users
                 .Where(u => u.IsActive)
                 .Select(u => new
@@ -384,7 +394,7 @@ namespace Customs_Management_System.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("approve-user/{userId}")]
-        
+
 
         public async Task<IActionResult> ApproveUser(int userId)
         {
@@ -403,7 +413,7 @@ namespace Customs_Management_System.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("stop-role/{userId}")]
-       
+
 
         public async Task<IActionResult> StopUserRole(int userId)
         {
@@ -425,7 +435,7 @@ namespace Customs_Management_System.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("user-reports")]
-       
+
 
         public async Task<IActionResult> GetUserReports(int userId)
         {
@@ -486,7 +496,233 @@ namespace Customs_Management_System.Controllers
             return Ok(summary);
         }
 
+        [HttpGet("PendingDeclarations")]
+        public IActionResult GetPendingDeclarations()
+        {
+            var pendingDeclarations = _customsRepo.GetPendingDeclaration();
+            return Ok(pendingDeclarations);
+        }
 
-    };
-}
+        // GET: api/CustomsOfficer/RunningDeclarations
+        [HttpGet("RunningDeclarations")]
+        public IActionResult GetRunningDeclarations()
+        {
+            var runningDeclarations = _customsRepo.GetRunningDeclaration();
+            return Ok(runningDeclarations);
+        }
+
+        //For co permisition 
+
+        [HttpGet("PendingShipments")]
+        public async Task<IActionResult> GetPendingShipments()
+        {
+            var pendingShipments = await _context.Shipments
+                .Include(s => s.Declaration)
+                .Where(s => s.Status == "Pending")
+                .Select(s => new
+                {
+                    s.ShipmentId,
+                    s.DeclarationId,
+                    s.MethodOfShipment,
+                    s.PortOfDeparture,
+                    s.PortOfDestination,
+                    s.DepartureDate,
+                    s.ArrivalDate,
+                    DeclarationStatus = s.Declaration.Status,
+                    s.Declaration.UserId,
+                    Payments = _context.Payments
+                        .Where(p => p.DeclarationId == s.DeclarationId && p.Status == "Pending")
+                        .Select(p => new { p.PaymentId, p.Amount, p.Date })
+                        .ToList() // Convert IQueryable to List
+                })
+                .ToListAsync();
+
+            return Ok(pendingShipments);
+        }
+
+        [HttpGet("GetRunningShipments")]
+        public async Task<IActionResult> GetRunningShipments()
+        {
+            var runningShipments = _context.Shipments
+                .Where(s => s.Status == "Running")
+                .Select(s => new
+                {
+                    s.ShipmentId,
+                    s.DeclarationId,
+                    s.MethodOfShipment,
+                    s.PortOfDeparture,
+                    s.PortOfDestination,
+                    s.DepartureDate,
+                    s.ArrivalDate,
+
+                })
+                .ToList();
+
+            return Ok(runningShipments);
+        }
+
+        // GET: api/CMS/GetRejectedShipments
+        [HttpGet("GetRejectedShipments")]
+        public async Task<IActionResult> GetRejectedShipments()
+        {
+            var rejectedShipments = _context.Shipments
+                .Where(s => s.Status == "Rejected")
+                .Select(s => new
+                {
+                    s.ShipmentId,
+                    s.DeclarationId,
+                    s.MethodOfShipment,
+                    s.PortOfDeparture,
+                    s.PortOfDestination,
+                    s.DepartureDate,
+                    s.ArrivalDate
+                })
+                .ToList();
+
+            return Ok(rejectedShipments);
+        }
+
+
+        [HttpGet("GetCompleteShipments")]
+        public async Task<IActionResult> GetCompleteShipments()
+        {
+            var shipments = from s in _context.Shipments
+                            join d in _context.Declarations on s.DeclarationId equals d.DeclarationId
+                            join u in _context.Users on d.UserId equals u.UserId
+                            join r in _context.Roles on u.UserRoleId equals r.RoleId
+                            join p in _context.Payments on new { d.UserId, d.DeclarationId } equals new { p.UserId, p.DeclarationId } into payments
+                            from payment in payments.DefaultIfEmpty() // Left join to handle cases with no payments
+                            select new
+                            {
+                                s.ShipmentId,
+                                s.DeclarationId,
+                                s.MethodOfShipment,
+                                s.PortOfDeparture,
+                                s.PortOfDestination,
+                                DepartureDate = s.DepartureDate.ToString("yyyy-MM-dd"),
+                                ArrivalDate = s.ArrivalDate.ToString("yyyy-MM-dd"),
+                                ShipmentStatus = s.Status,
+                                UserName = u.UserName,
+                                UserRole = r.RoleName,
+                                DeclarationStatus = d.Status,
+                                PaymentStatus = payment != null ? payment.Status : "No Payment"
+                            };
+
+            var result = await shipments.ToListAsync();
+            return Ok(result);
+        }
+
+        // POST: api/CustomsOfficer/ApproveShipment/{shipmentId}
+        [HttpPost("ApproveShipment/{shipmentId}")]
+        public async Task<IActionResult> ApproveShipment(int shipmentId)
+        {
+            var shipment = await _context.Shipments
+                .Include(s => s.Declaration)
+                .FirstOrDefaultAsync(s => s.ShipmentId == shipmentId);
+
+            if (shipment == null)
+            {
+                return NotFound("Shipment not found.");
+            }
+
+            var payments = await _context.Payments
+                .Where(p => p.DeclarationId == shipment.DeclarationId && p.Status == "Completed")
+                .ToListAsync();
+
+            if (!payments.Any())
+            {
+                return BadRequest("Payment not completed for this declaration.");
+            }
+
+            shipment.Status = "Approved";
+            shipment.Declaration.Status = "Approved";
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Shipment approved successfully.");
+        }
+
+        // POST: api/CustomsOfficer/RejectShipment/{shipmentId}
+        [HttpPost("RejectShipment/{shipmentId}")]
+        public async Task<IActionResult> RejectShipment(int shipmentId)
+        {
+            var shipment = await _context.Shipments
+                .FirstOrDefaultAsync(s => s.ShipmentId == shipmentId);
+
+            if (shipment == null)
+            {
+                return NotFound("Shipment not found.");
+            }
+
+            shipment.Status = "Rejected";
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Shipment rejected successfully.");
+        }
+
+
+       
+
+
+          
+        [HttpGet("/Get-officer-report")]
+        public async Task<ActionResult<IEnumerable<ReportDto>>> GetCustomsOfficerReport()
+        {
+            var reports = await _customsRepo.GetCustomsOfficerReportsAsync();
+            return Ok(reports);
+        }
+
+        [HttpGet("/download-report")]
+        public async Task<IActionResult> DownloadReport()
+        {
+            try
+            {
+                // Fetch reports from the repository
+                var reports = await _customsRepo.GetCustomsOfficerReportsAsync();
+
+                // Generate the PDF report
+                var createdBy = "Customes Officer"; // Replace with dynamic value if needed
+                var reportDate = DateTime.UtcNow; // Current date and time
+                var pdfBytes = _customsRepo.GeneratePdfReport(reports, createdBy, reportDate);
+
+                // Return the PDF file to the client
+                return File(pdfBytes, "application/pdf", "Report.pdf");
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors that occur during the PDF generation or file download
+                // Log the exception if needed
+                // Return a status code or error message to the client
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("/payment-history-show")]
+        public async Task<IActionResult> GetPaymentHistory()
+        {
+            var paymentHistory = await _customsRepo.GetPaymentHistoryAsync();
+            return Ok(paymentHistory);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+};
+
+
 

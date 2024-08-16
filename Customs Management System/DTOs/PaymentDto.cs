@@ -8,7 +8,7 @@ namespace Customs_Management_System.DTOs
     public class PaymentDto
     {
 
-       
+       public int PaymentId { get; set; }
         public int UserId { get; set; }
 
         public int DeclarationId { get; set; }
@@ -20,12 +20,12 @@ namespace Customs_Management_System.DTOs
         public string Status { get; set; } = null!;
 
         public int? ProductId { get; set; }
+        public string ProductName { get; set; } = null!;
 
-        public virtual DeclarationDto Declaration { get; set; } = null!;
 
-        public virtual ProductDto? Product { get; set; }
 
-  
-        public virtual UserDto User { get; set; } = null!;
+
+
+
     }
 }

@@ -2,6 +2,8 @@
 using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
+using iTextSharp.text.pdf;
+using iTextSharp.text;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -40,68 +42,7 @@ namespace Customs_Management_System.Repository
             return products;
         }
 
-        /*
-        public async Task<string> CreateDeclarationAsync(DeclarationDto declarationDto)
-        {
-            try
-            {
-                // Check if UserId exists
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId);
-                if (!userExists)
-                {
-                    throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
-                }
-
-                var declaration = new Declaration
-                {
-                    UserId = declarationDto.UserId,
-                    DeclarationDate = declarationDto.DeclarationDate,
-                    Status = declarationDto.Status,
-                    Products = declarationDto.Products.Select(p => new Product
-                    {
-                        ProductName = p.ProductName,
-                        Quantity = p.Quantity,
-                        Weight = p.Weight,
-                        CountryOfOrigin = p.CountryOfOrigin,
-                        Hscode = p.Hscode
-                    }).ToList(),
-                    Shipments = declarationDto.Shipments.Select(s => new Shipment
-                    {
-                        MethodOfShipment = s.MethodOfShipment,
-                        PortOfDeparture = s.PortOfDeparture,
-                        PortOfDestination = s.PortOfDestination,
-                        DepartureDate = s.DepartureDate,
-                        ArrivalDate = s.ArrivalDate
-                    }).ToList()
-                };
-
-                await _context.Declarations.AddAsync(declaration);
-                await _context.SaveChangesAsync();
-
-                // Create a monitoring record
-                var monitoring = new Monitoring
-                {
-                    DeclarationId = declaration.DeclarationId,
-                    MethodOfShipment = declaration.Shipments.FirstOrDefault().MethodOfShipment,
-                    PortOfDeparture = declaration.Shipments.FirstOrDefault().PortOfDeparture,
-                    PortOfDestination = declaration.Shipments.FirstOrDefault().PortOfDestination,
-                    DepartureDate = declaration.Shipments.FirstOrDefault().DepartureDate,
-                    ArrivalDate = declaration.Shipments.FirstOrDefault().ArrivalDate,
-                    Status = "Pending" // Initial status
-                };
-
-                await _context.Monitorings.AddAsync(monitoring);
-                await _context.SaveChangesAsync();
-
-                return "Declaration and Monitoring Created Successfully";
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"An unexpected error occurred. Details: {e.Message}");
-            }
-        }
-
-        */
+        
         public async Task<string> CreateDeclarationAsync(DeclarationDto declarationDto)
         {
             try
@@ -122,7 +63,7 @@ namespace Customs_Management_System.Repository
                     Products = declarationDto.Products.Select(p => new Product
                     {
                         ProductName = p.ProductName,
-                        Category = p.Category, // Add this line to include the category
+                        Category = p.Category, 
                         Quantity = p.Quantity,
                         Weight = p.Weight,
                         CountryOfOrigin = p.CountryOfOrigin,
@@ -136,7 +77,8 @@ namespace Customs_Management_System.Repository
                         PortOfDeparture = s.PortOfDeparture,
                         PortOfDestination = s.PortOfDestination,
                         DepartureDate = s.DepartureDate,
-                        ArrivalDate = s.ArrivalDate
+                        ArrivalDate = s.ArrivalDate,
+                        Status="Pending"
                     }).ToList()
                 };
 
@@ -315,6 +257,7 @@ namespace Customs_Management_System.Repository
                         Hscode = p.Hscode,
                         DeclarationId = p.DeclarationId,
                         TotalPrice= p.TotalPrice,
+                        Category=p.Category
                     }).ToList(),
                     Shipments = declarationDto.Shipments.Select(s => new Shipment
                     {
@@ -322,7 +265,8 @@ namespace Customs_Management_System.Repository
                         PortOfDeparture = s.PortOfDeparture,
                         PortOfDestination = s.PortOfDestination,
                         DepartureDate = s.DepartureDate,
-                        ArrivalDate = s.ArrivalDate
+                        ArrivalDate = s.ArrivalDate,
+                        Status="Pending"
                     }).ToList()
                 };
 
@@ -418,6 +362,226 @@ namespace Customs_Management_System.Repository
                 RunningShipments = runningShipments
             };
         }
+
+        public IEnumerable<DeclarationDto> GetPendingDeclaration()
+        {
+            return _context.Declarations
+                .Where(d => d.Status == "Pending")
+                .Include(d => d.Products) // Assuming your entity includes these navigation properties
+                .Include(d => d.Shipments)
+                .Select(d => new DeclarationDto
+                {
+                    UserId = d.UserId,
+                    DeclarationId = d.DeclarationId,
+                    DeclarationDate = d.DeclarationDate,
+                    Status = d.Status,
+                    IsActive = d.IsActive,
+                    Products = d.Products.Select(p => new ProductDto
+                    {
+                        ProductName = p.ProductName,
+                        Quantity = p.Quantity,
+                        Weight = p.Weight,
+                        CountryOfOrigin = p.CountryOfOrigin,
+                        Hscode = p.Hscode
+                    }).ToList(),
+                    Shipments = d.Shipments.Select(s => new ShipmentDto
+                    {
+                        ShipmentId = s.ShipmentId,
+                        MethodOfShipment = s.MethodOfShipment,
+                        PortOfDeparture = s.PortOfDeparture,
+                        PortOfDestination = s.PortOfDestination,
+                        DepartureDate = s.DepartureDate,
+                        ArrivalDate = s.ArrivalDate
+                    }).ToList()
+                }).ToList();
+        }
+
+        public IEnumerable<DeclarationDto> GetRunningDeclaration()
+        {
+            return _context.Declarations
+                .Where(d => d.Status == "Running" && d.IsActive)
+                .Include(d => d.Products)
+                .Include(d => d.Shipments)
+                .Select(d => new DeclarationDto
+                {
+                    UserId = d.UserId,
+                    DeclarationId = d.DeclarationId,
+                    DeclarationDate = d.DeclarationDate,
+                    Status = d.Status,
+                    IsActive = d.IsActive,
+                    Products = d.Products.Select(p => new ProductDto
+                    {
+                        ProductName = p.ProductName,
+                        Quantity = p.Quantity,
+                        Weight = p.Weight,
+                        CountryOfOrigin = p.CountryOfOrigin,
+                        Hscode = p.Hscode
+                    }).ToList(),
+                    Shipments = d.Shipments.Select(s => new ShipmentDto
+                    {
+                        ShipmentId = s.ShipmentId,
+                        MethodOfShipment = s.MethodOfShipment,
+                        PortOfDeparture = s.PortOfDeparture,
+                        PortOfDestination = s.PortOfDestination,
+                        DepartureDate = s.DepartureDate,
+                        ArrivalDate = s.ArrivalDate
+                    }).ToList()
+                }).ToList();
+        }
+
+
+        //report
+
+        public async Task<IEnumerable<ReportDto>> GetCustomsOfficerReportsAsync()
+        {
+            var reports = await (from d in _context.Declarations
+                                 join u in _context.Users on d.UserId equals u.UserId
+                                 join r in _context.Roles on u.UserRoleId equals r.RoleId
+                                 join p in _context.Payments on d.DeclarationId equals p.DeclarationId into paymentGroup
+                                 from pg in paymentGroup.DefaultIfEmpty() // Left join with Payments
+                                 join pr in _context.Products on d.DeclarationId equals pr.DeclarationId into productGroup
+                                 from prg in productGroup.DefaultIfEmpty() // Left join with Products
+                                 join pp in _context.ProductPrices on new { prg.Category, prg.ProductName } equals new { pp.Category, pp.ProductName } into priceGroup
+                                 from ppg in priceGroup.DefaultIfEmpty() // Left join with ProductPrices
+                                 select new ReportDto
+                                 {
+                                     DeclarationId = d.DeclarationId,
+                                     UserName = u.UserName,
+                                     RoleName = r.RoleName,
+                                     DeclarationDate = d.DeclarationDate,
+                                     Status = d.Status,
+                                     Amount = pg != null ? pg.Amount : 0, // Explicit null check for payment amount
+                                     ProductName = prg != null ? prg.ProductName : "No Product", // Explicit null check for product name
+                                     Quantity = prg != null ? prg.Quantity : 0, // Explicit null check for quantity
+                                     UnitPrice = ppg != null ? ppg.Price ?? 0 : 0, // Explicit null check for price
+                                     TotalPrice = (prg != null ? prg.Quantity : 0) * (ppg != null ? ppg.Price ?? 0 : 0) // Explicit null check for quantity and price
+                                 }).ToListAsync();
+
+            return reports;
+        }
+        public byte[] GeneratePdfReport(IEnumerable<ReportDto> reports, string createdBy, DateTime reportDate)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                // Create a new PDF document
+                var document = new Document(PageSize.A4);
+                PdfWriter.GetInstance(document, memoryStream);
+                document.Open();
+
+                // Add title
+                var titleFont = FontFactory.GetFont(FontFactory.TIMES_BOLD, 20);
+                var titleParagraph = new Paragraph("Customs Officer Report", titleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 10f
+                };
+                document.Add(titleParagraph);
+
+                // Add creator and date
+                var metadataFont = FontFactory.GetFont(FontFactory.TIMES, 12);
+                var metadataParagraph = new Paragraph
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 20f,
+                    Font = metadataFont // Apply font to the metadata paragraph
+                };
+                metadataParagraph.Add($"Created by: {createdBy}\n");
+                metadataParagraph.Add($"Date: {reportDate.ToString("MMMM d, yyyy HH:mm:ss")}");
+                document.Add(metadataParagraph);
+
+                // Add table
+                var table = new PdfPTable(9) // Updated column count to 9
+                {
+                    WidthPercentage = 100
+                };
+                table.SetWidths(new float[] { 8, 50, 15, 15, 10, 15, 12, 12, 15 }); // Adjust column widths
+
+                // Add table headers
+                AddCellToHeader(table, "Declaration ID");
+                AddCellToHeader(table, "User Name");
+                AddCellToHeader(table, "Role");
+                AddCellToHeader(table, "Declaration Date");
+                AddCellToHeader(table, "Status");
+                AddCellToHeader(table, "Payment");
+                AddCellToHeader(table, "Product Name");
+                AddCellToHeader(table, "Unit Price");
+                AddCellToHeader(table, "Total Price");
+
+                // Add table rows
+                foreach (var report in reports)
+                {
+                    AddCellToBody(table, report.DeclarationId.ToString());
+                    AddCellToBody(table, report.UserName);
+                    AddCellToBody(table, report.RoleName);
+                    AddCellToBody(table, report.DeclarationDate.ToShortDateString());
+                    AddCellToBody(table, report.Status);
+                    AddCellToBody(table, report.Amount.ToString("C"));
+                    AddCellToBody(table, report.ProductName);
+                    AddCellToBody(table, report.UnitPrice.ToString("C"));
+                    AddCellToBody(table, report.TotalPrice.ToString("C"));
+                }
+
+                document.Add(table);
+
+                // Close the document
+                document.Close();
+
+                return memoryStream.ToArray();
+            }
+        }
+
+        private void AddCellToHeader(PdfPTable table, string text)
+        {
+            var headerFont = FontFactory.GetFont(FontFactory.TIMES_BOLD, 12);
+            var cell = new PdfPCell(new Phrase(text, headerFont))
+            {
+                BackgroundColor = new BaseColor(204, 204, 204), // Light gray background
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                Padding = 8,
+                BorderColor = BaseColor.BLACK
+            };
+            table.AddCell(cell);
+        }
+
+        private void AddCellToBody(PdfPTable table, string text)
+        {
+            var bodyFont = FontFactory.GetFont(FontFactory.TIMES, 10);
+            var cell = new PdfPCell(new Phrase(text, bodyFont))
+            {
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                Padding = 8,
+                BorderColor = BaseColor.LIGHT_GRAY // Light gray border
+            };
+            table.AddCell(cell);
+        }
+
+
+        public async Task<IEnumerable<PaymentDto>> GetPaymentHistoryAsync()
+        {
+            return await _context.Payments
+                .Select(p => new PaymentDto
+                {
+                    PaymentId = p.PaymentId,
+                    UserId = p.UserId,
+                    Amount = p.Amount,
+                    Date = p.Date,
+                    Status = p.Status,
+                    DeclarationId = p.DeclarationId,
+                    ProductName = _context.Products.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
+                })
+                .ToListAsync();
+        }
+
+
+
+
+
+
+
+
+
+
+
 
 
     }

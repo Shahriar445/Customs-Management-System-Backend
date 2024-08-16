@@ -3,15 +3,20 @@
     
         public class ReportDto
     {
-        public int ReportId { get; set; }
-        public int UserId { get; set; }
-        public string? ReportType { get; set; }
-        public string? Content { get; set; }
-        public DateTime? CreateAt { get; set; }
+        public int DeclarationId { get; set; }
+        public string UserName { get; set; }
+        public string RoleName { get; set; }
+        public DateTime DeclarationDate { get; set; }
+        public string? Status { get; set; }
+        public decimal Amount { get; set; }
+        public string? ProductName { get; set; }
+        public int Quantity { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal UnitPrice { get; set; }
 
 
         // Including related details for Declaration, Product, and Shipment
-        public DeclarationDto Declaration { get; set; } = null!;
+
 
 
 
