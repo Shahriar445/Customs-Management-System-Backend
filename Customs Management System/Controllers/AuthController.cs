@@ -151,6 +151,7 @@ namespace Customs_Management_System.Controllers
 
                 var response = new LoginResponseDto
                 {
+                    UserId= user.UserId,
                     UserName = user.UserName,
                     Role = role,
                     Token = GenerateJwtToken(user.UserName, role) // Generate token for regular user
