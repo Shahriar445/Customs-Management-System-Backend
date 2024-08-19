@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Register DbContext
 builder.Services.AddDbContext<CMSDbContext>();
 
+
 // Configure JWT Bearer Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -35,7 +36,7 @@ DependencyInversion.RegisterServices(builder.Services);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Open", builder =>
-    {
+    { 
         builder.AllowAnyOrigin()
                .AllowAnyHeader()
                .AllowAnyMethod();

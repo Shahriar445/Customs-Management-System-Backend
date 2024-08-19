@@ -8,7 +8,10 @@ namespace Customs_Management_System.DependencyContainer
     {
         public static void RegisterServices(IServiceCollection services)
         {
+            services.AddHttpClient();
+
             services.AddTransient<ICustomsRepository, CustomsRepository>();
+            services.AddTransient<IPaymentService,PaymentServiceRepository>();
         }
     }
 }
