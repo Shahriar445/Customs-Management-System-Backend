@@ -25,15 +25,18 @@ public class PaymentController : ControllerBase
     [HttpPost("initiate")]
     public async Task<IActionResult> InitiatePayment([FromBody] PaymentRequest request)
     {
-        if (request == null || request.DeclarationId <= 0)
+        if (request == null || request.DeclarationId <= 0 || string.IsNullOrEmpty(request.ReturnUrl))
         {
-            return BadRequest(new { Message = "Invalid payment request." });
+            return BadRequest(new { Message = "Invalid payment request or return URL." });
         }
 
         try
         {
             var transactionId = Guid.NewGuid().ToString();
-            var successUrl = $"{Request.Scheme}://{Request.Host}/api/Payment/success";
+            var successUrl = $"{Request.Scheme}://{Request.Host}/api/Payment/success" +
+                $"?transactionId={Uri.EscapeDataString(transactionId)}" +
+                $"&declarationId={request.DeclarationId}" +
+                $"&returnUrl={Uri.EscapeDataString(request.ReturnUrl)}";
             var failUrl = $"{Request.Scheme}://{Request.Host}/api/Payment/fail";
             var cancelUrl = $"{Request.Scheme}://{Request.Host}/api/payment/cancel";
 
@@ -46,13 +49,15 @@ public class PaymentController : ControllerBase
         }
     }
 
-    // Inside the PaymentController
-    [HttpGet("success")]
-    public async Task<IActionResult> PaymentSuccess([FromQuery] string transactionId, [FromQuery] int declarationId)
+
+
+
+    [HttpPost("success")]
+    public async Task<IActionResult> PaymentSuccess([FromQuery] string transactionId, [FromQuery] int declarationId, [FromQuery] string returnUrl)
     {
-        if (string.IsNullOrEmpty(transactionId) || declarationId <= 0)
+        if (string.IsNullOrEmpty(transactionId) || declarationId <= 0 || string.IsNullOrEmpty(returnUrl))
         {
-            return BadRequest(new { Message = "Invalid transaction ID or declaration ID." });
+            return BadRequest(new { Message = "Invalid transaction ID, declaration ID, or return URL." });
         }
 
         try
@@ -77,8 +82,8 @@ public class PaymentController : ControllerBase
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
 
-            // Redirect to success page
-            return Redirect($"{Request.Scheme}://{Request.Host}/payment_success.html");
+            // Redirect to the frontend success page
+            return Redirect(returnUrl);
         }
         catch (Exception ex)
         {
@@ -130,4 +135,5 @@ public class PaymentController : ControllerBase
 public class PaymentRequest
 {
     public int DeclarationId { get; set; }
+    public string ReturnUrl {  get; set; }
 }
