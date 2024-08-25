@@ -23,6 +23,8 @@ public partial class Product
 
     public decimal? TotalPrice { get; set; }
 
+    public bool? IsPayment { get; set; }
+
     public virtual Declaration Declaration { get; set; } = null!;
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

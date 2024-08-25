@@ -19,6 +19,18 @@ public partial class Payment
 
     public int? ProductId { get; set; }
 
+    public string? TransactionId { get; set; }
+
+    public string? PaymentMethod { get; set; }
+
+    public string? Currency { get; set; }
+
+    public string? ResponseData { get; set; }
+
+    public string? ErrorCode { get; set; }
+
+    public string? ErrorMessage { get; set; }
+
     public virtual Declaration Declaration { get; set; } = null!;
 
     public virtual Product? Product { get; set; }

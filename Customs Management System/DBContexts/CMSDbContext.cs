@@ -88,11 +88,20 @@ public partial class CMSDbContext : DbContext
         {
             entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A380AA141C0");
 
+            entity.HasIndex(e => e.TransactionId, "UQ__Payments__55433A6A1ADCF7C5").IsUnique();
+
             entity.Property(e => e.Amount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Currency)
+                .HasMaxLength(10)
+                .HasDefaultValue("BDT");
             entity.Property(e => e.Date).HasColumnType("datetime");
+            entity.Property(e => e.ErrorCode).HasMaxLength(50);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(255);
+            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.TransactionId).HasMaxLength(100);
 
             entity.HasOne(d => d.Declaration).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.DeclarationId)
