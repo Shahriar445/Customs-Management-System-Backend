@@ -12,4 +12,6 @@ public partial class ProductPrice
     public string? ProductName { get; set; }
 
     public decimal? Price { get; set; }
+
+    public string? HsCode { get; set; }
 }

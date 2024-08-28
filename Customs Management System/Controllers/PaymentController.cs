@@ -76,7 +76,8 @@ public class PaymentController : ControllerBase
                 Status = "Completed",
                 TransactionId = transactionId,
                 PaymentMethod = "SSLCommerz",
-                Currency = "BDT"
+                Currency = "BDT",
+                
             };
 
             _context.Payments.Add(payment);

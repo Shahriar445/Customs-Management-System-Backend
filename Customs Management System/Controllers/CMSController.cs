@@ -189,12 +189,12 @@ namespace Customs_Management_System.Controllers
 
         //-------------------------------------------------------------- importer dashboard api 
 
-        [HttpGet("dashboardOverview")]
-        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporters()
+        [HttpGet("dashboardOverview/{userId}")]
+        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporter(int userId)
         {
             try
             {
-                var dashboardOverview = await _customsRepo.GetDashboardOverviewAsync();
+                var dashboardOverview = await _customsRepo.GetDashboardOverviewAsync(userId);
                 return Ok(dashboardOverview);
             }
             catch (Exception ex)

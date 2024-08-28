@@ -54,12 +54,21 @@ namespace Customs_Management_System.Repository
                     throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
                 }
 
+                var productNames = declarationDto.Products.Select(p => p.ProductName).Distinct().ToList();
+                var productPrices = await _context.ProductPrices
+                    .Where(pp => productNames.Contains(pp.ProductName))
+                    .ToListAsync();
+
+                var productPriceDict = productPrices
+                   .ToDictionary(pp => pp.ProductName, pp => pp.HsCode);
+
                 var declaration = new Declaration
                 {
                     UserId = declarationDto.UserId,
                     DeclarationDate = declarationDto.DeclarationDate,
                     Status = declarationDto.Status,
                     IsActive= declarationDto.IsActive,
+                    IsPayment=false,
                     Products = declarationDto.Products.Select(p => new Product
                     {
                         ProductName = p.ProductName,
@@ -67,9 +76,12 @@ namespace Customs_Management_System.Repository
                         Quantity = p.Quantity,
                         Weight = p.Weight,
                         CountryOfOrigin = p.CountryOfOrigin,
-                        Hscode = p.Hscode,
+                        Hscode = productPriceDict.ContainsKey(p.ProductName) ? productPriceDict[p.ProductName] : null, // Auto-update HsCode
                         DeclarationId = p.DeclarationId,
-                        TotalPrice=p.TotalPrice
+                        TotalPrice=p.TotalPrice,
+                        IsPayment=false,
+                        
+                        
                     }).ToList(),
                     Shipments = declarationDto.Shipments.Select(s => new Shipment
                     {
@@ -153,7 +165,7 @@ namespace Customs_Management_System.Repository
         {
             return await _context.Declarations
                 .Include(d => d.Products)
-                .Where(d => d.UserId == userId)
+                .Where(d => d.UserId == userId && d.IsPayment==false)
                 .ToListAsync();
         }
 
@@ -165,24 +177,30 @@ namespace Customs_Management_System.Repository
 
         //-----------For Dashboard overView importer
 
-        public async Task<DashboardOverViewDto> GetDashboardOverviewAsync()
+        public async Task<DashboardOverViewDto> GetDashboardOverviewAsync(int userId)
         {
             try
             {
-                // Find users with RoleId == 2 (Importer)
-                var importerUsers = await _context.Users
-                    .Where(u => u.UserRoleId == 2)
-                    .ToListAsync();
+                // Find the user with the given userId and RoleId == 2 (Importer)
+                var importerUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == userId && u.UserRoleId == 2);
+
+                if (importerUser == null)
+                {
+                    throw new Exception("Importer not found");
+                }
 
                 int totalDeclarations = await _context.Declarations
-                    .CountAsync(d => importerUsers.Select(u => u.UserId).Contains(d.UserId));
+                    .CountAsync(d => d.UserId == userId);
 
-                int pendingPayments = await _context.Payments
-                    .CountAsync(p => importerUsers.Select(u => u.UserId).Contains(p.UserId) && p.Status == "Pending");
+                
+                int pendingPayments = await _context.Declarations
+                     .CountAsync(p => p.UserId == userId && p.IsPayment == false);
+
 
                 int shipmentMonitoring = await _context.Shipments
                     .Include(s => s.Declaration)
-                    .CountAsync(s => importerUsers.Select(u => u.UserId).Contains(s.Declaration.UserId));
+                    .CountAsync(s => s.Declaration.UserId == userId);
 
                 return new DashboardOverViewDto
                 {
@@ -200,7 +218,7 @@ namespace Customs_Management_System.Repository
 
 
         // -------------------------------------------------Exporter part ---------------------------------
-       public async Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter()
+        public async Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter()
         {
             try
             {

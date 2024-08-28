@@ -15,6 +15,8 @@ public partial class Declaration
 
     public bool IsActive { get; set; }
 
+    public bool? IsPayment { get; set; }
+
     public virtual ICollection<Monitoring> Monitorings { get; set; } = new List<Monitoring>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

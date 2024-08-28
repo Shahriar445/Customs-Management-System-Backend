@@ -22,7 +22,7 @@ namespace Customs_Management_System.IRepository
 
         //dashboard 
        
-        Task<DashboardOverViewDto> GetDashboardOverviewAsync();
+        Task<DashboardOverViewDto> GetDashboardOverviewAsync(int userId);
 
         // --------------------Exporter part  
 

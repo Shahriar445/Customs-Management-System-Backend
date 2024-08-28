@@ -75,12 +75,24 @@ namespace Customs_Management_System.Repository
                 .Where(p => p.DeclarationId == declarationId)
                 .ToListAsync();
 
+            
+
             foreach (var product in products)
             {
                 product.IsPayment = true; // Assuming IsPayment is a boolean field
             }
 
             _context.Products.UpdateRange(products);
+
+            var declaration = await _context.Declarations
+                .FirstOrDefaultAsync(d => d.DeclarationId == declarationId);
+
+            if (declaration != null)
+            {
+                declaration.IsPayment = true; // Assuming IsPayment is a boolean field
+                _context.Declarations.Update(declaration);
+            }
+
             await _context.SaveChangesAsync();
         }
 

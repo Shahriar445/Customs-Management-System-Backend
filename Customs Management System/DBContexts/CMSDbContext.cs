@@ -147,6 +147,7 @@ public partial class CMSDbContext : DbContext
             entity.HasKey(e => e.PriceId).HasName("PK__ProductP__49575BAF6F01EDC7");
 
             entity.Property(e => e.Category).HasMaxLength(255);
+            entity.Property(e => e.HsCode).HasMaxLength(50);
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ProductName).HasMaxLength(100);
         });
