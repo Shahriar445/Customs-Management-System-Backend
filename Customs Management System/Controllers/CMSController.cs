@@ -153,6 +153,10 @@ namespace Customs_Management_System.Controllers
 
                         ProductName = p.ProductName,
                         Quantity = p.Quantity,
+                        TotalPrice = p.TotalPrice,
+                        Weight = p.Weight,
+                        Category=p.Category,
+                        Hscode = p.Hscode,
                         // Add other properties as needed
                     }).ToList()
                 }).ToList();
