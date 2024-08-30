@@ -590,8 +590,29 @@ namespace Customs_Management_System.Repository
                 .ToListAsync();
         }
 
+        // importer details 
 
-
+        public async Task<IEnumerable<ShipmentDetailsDto>> GetPortsByCountryAsync(string country)
+        {
+            return await _context.ShipmentDetails
+                .Where(sd => sd.Country == country)
+                .Select(sd => new ShipmentDetailsDto
+                {
+                    ShipmentdetailsId = sd.ShipmentDetailId,
+                    Country = sd.Country,
+                    Port = sd.Port,
+                    Vat = (decimal)sd.Vat,
+                    Tax = (decimal)sd.Tax
+                })
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<string>> GetAllCountriesAsync()
+        {
+            return await _context.ShipmentDetails
+                .Select(sd => sd.Country)
+                .Distinct()
+                .ToListAsync();
+        }
 
 
 

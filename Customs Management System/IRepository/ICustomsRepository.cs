@@ -5,7 +5,10 @@ namespace Customs_Management_System.IRepository
 {
     public interface ICustomsRepository
     {
-       
+
+        Task<IEnumerable<ShipmentDetailsDto>> GetPortsByCountryAsync(string country);
+        Task<IEnumerable<string>> GetAllCountriesAsync(); // New method
+
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
       
         Task<List<MonitoringDto>> GetMonitoringsAsync( );

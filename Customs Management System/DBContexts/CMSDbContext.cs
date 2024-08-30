@@ -34,6 +34,8 @@ public partial class CMSDbContext : DbContext
 
     public virtual DbSet<Shipment> Shipments { get; set; }
 
+    public virtual DbSet<ShipmentDetail> ShipmentDetails { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -220,6 +222,18 @@ public partial class CMSDbContext : DbContext
                 .HasForeignKey(d => d.DeclarationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DeclarationId_Shipment");
+        });
+
+        modelBuilder.Entity<ShipmentDetail>(entity =>
+        {
+            entity.HasKey(e => e.ShipmentDetailId).HasName("PK__Shipment__0471432049FEF821");
+
+            entity.Property(e => e.Country).HasMaxLength(100);
+            entity.Property(e => e.Port).HasMaxLength(100);
+            entity.Property(e => e.Tax).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.Vat)
+                .HasColumnType("decimal(5, 2)")
+                .HasColumnName("VAT");
         });
 
         modelBuilder.Entity<User>(entity =>

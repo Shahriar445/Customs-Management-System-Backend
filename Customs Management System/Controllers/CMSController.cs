@@ -207,7 +207,25 @@ namespace Customs_Management_System.Controllers
             }
         }
 
+        // GET: api/ShipmentDetails/country/USA
+        [HttpGet("/country/{country}")]
+        public async Task<ActionResult<IEnumerable<ShipmentDetailsDto>>> GetPortsByCountry(string country)
+        {
+            var shipmentDetails = await _customsRepo.GetPortsByCountryAsync(country);
 
+            if (shipmentDetails == null || !shipmentDetails.Any())
+            {
+                return NotFound();
+            }
+
+            return Ok(shipmentDetails);
+        }
+        [HttpGet("/Getcountries")]
+        public async Task<IActionResult> GetAllPortCountry()
+        {
+            var countrys = await _customsRepo.GetAllCountriesAsync();
+            return Ok(countrys);
+        }
 
         //------------------------------------------------------------------Exporter api --------------------------------------------------------------------------------------------------
         /*                              Total  api 
