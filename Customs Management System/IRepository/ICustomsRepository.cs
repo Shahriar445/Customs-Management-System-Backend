@@ -10,7 +10,7 @@ namespace Customs_Management_System.IRepository
         Task<IEnumerable<string>> GetAllCountriesAsync(); // New method
 
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
-      
+        Task<string> CreateDeclarationExporters(DeclarationDto declaration);
         Task<List<MonitoringDto>> GetMonitoringsAsync( );
         Task<IEnumerable<ProductPriceDto>> GetProductsByCategoryAsync(string category);
 
@@ -31,8 +31,6 @@ namespace Customs_Management_System.IRepository
 
       
         Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter();
-        Task<string> CreateDeclarationExporter(DeclarationDto declaration);
-
 
         //----------------------- customes officer  ----------------
 

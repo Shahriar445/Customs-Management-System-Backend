@@ -120,6 +120,9 @@ namespace Customs_Management_System.Repository
             }
         }
 
+
+
+
         public async Task<List<MonitoringDto>> GetMonitoringsAsync()
         {
             try
@@ -154,12 +157,6 @@ namespace Customs_Management_System.Repository
                 throw new Exception($"An unexpected error occurred. Details: {e.Message}");
             }
         }
-
-
-
-
-
-          
         // payment 
         public async Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId)
         {
@@ -250,32 +247,46 @@ namespace Customs_Management_System.Repository
             }
         }
 
-        public async Task<string> CreateDeclarationExporter(DeclarationDto declarationDto)
+
+        public async Task<string> CreateDeclarationExporters(DeclarationDto declarationDto)
         {
             try
             {
                 // Check if UserId exists
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId);
+                var userExists = await _context.Users.AnyAsync(u => u.UserId == declarationDto.UserId && u.UserRoleId == 3);
                 if (!userExists)
                 {
                     throw new Exception($"User with UserId {declarationDto.UserId} does not exist.");
                 }
+
+                var productNames = declarationDto.Products.Select(p => p.ProductName).Distinct().ToList();
+                var productPrices = await _context.ProductPrices
+                    .Where(pp => productNames.Contains(pp.ProductName))
+                    .ToListAsync();
+
+                var productPriceDict = productPrices
+                   .ToDictionary(pp => pp.ProductName, pp => pp.HsCode);
 
                 var declaration = new Declaration
                 {
                     UserId = declarationDto.UserId,
                     DeclarationDate = declarationDto.DeclarationDate,
                     Status = declarationDto.Status,
+                    IsActive= declarationDto.IsActive,
+                    IsPayment=false,
                     Products = declarationDto.Products.Select(p => new Product
                     {
                         ProductName = p.ProductName,
+                        Category = p.Category,
                         Quantity = p.Quantity,
                         Weight = p.Weight,
                         CountryOfOrigin = p.CountryOfOrigin,
-                        Hscode = p.Hscode,
+                        Hscode = productPriceDict.ContainsKey(p.ProductName) ? productPriceDict[p.ProductName] : null, // Auto-update HsCode
                         DeclarationId = p.DeclarationId,
-                        TotalPrice= p.TotalPrice,
-                        Category=p.Category
+                        TotalPrice=p.TotalPrice,
+                        IsPayment=false,
+
+
                     }).ToList(),
                     Shipments = declarationDto.Shipments.Select(s => new Shipment
                     {
@@ -306,14 +317,12 @@ namespace Customs_Management_System.Repository
                 await _context.Monitorings.AddAsync(monitoring);
                 await _context.SaveChangesAsync();
 
-
                 return "Declaration Created Successfully";
             }
             catch (Exception e)
             {
                 throw new Exception($"An unexpected error occurred. Details: {e.Message}");
             }
-
         }
 
 

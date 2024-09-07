@@ -253,12 +253,12 @@ namespace Customs_Management_System.Controllers
             }
         }
 
-        [HttpPost("/Create-Declaration-Exporter")]
+        [HttpPost("/CreateDeclarationExporter")]
         public async Task<IActionResult> CreateDeclarationExporters(DeclarationDto declarationDto)
         {
             try
             {
-                var result = await _customsRepo.CreateDeclarationExporter(declarationDto);
+                var result = await _customsRepo.CreateDeclarationExporters(declarationDto);
                 return StatusCode(StatusCodes.Status201Created, result);
             }
             catch (Exception e)
