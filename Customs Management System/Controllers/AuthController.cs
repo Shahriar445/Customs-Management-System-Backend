@@ -49,7 +49,7 @@ namespace Customs_Management_System.Controllers
                     break;
                 default:
                     _logger.LogWarning("Invalid role: {Role}", userDto.Role);
-                    return BadRequest("Invalid role");
+                    return BadRequest(new { statusCode = 400, message = "Invalid role" });
             }
 
             // Check if the user already exists
@@ -59,7 +59,7 @@ namespace Customs_Management_System.Controllers
             if (userExists)
             {
                 _logger.LogWarning("User with the same username or email already exists: {UserName}", userDto.UserName);
-                return BadRequest("User with the same username or email already exists.");
+                return BadRequest(new { statusCode = 400, message = "User with the same username or email already exists." });
             }
 
             // Create a new user
@@ -81,12 +81,16 @@ namespace Customs_Management_System.Controllers
             {
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("User registered successfully: {UserName}", user.UserName);
-                return Ok("User registered successfully, Please wait for Admin Approval");
+
+                // Return JSON response with status code
+                return Ok(new { statusCode = 200, message = "User registered successfully, Please wait for Admin Approval" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error registering user: {UserName}", user.UserName);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while registering the user.");
+
+                // Return JSON response for internal server error with status code
+                return StatusCode(StatusCodes.Status500InternalServerError, new { statusCode = 500, message = "An error occurred while registering the user." });
             }
         }
 
