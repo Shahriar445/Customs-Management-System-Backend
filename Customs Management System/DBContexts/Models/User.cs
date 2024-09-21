@@ -21,6 +21,8 @@ public partial class User
 
     public bool IsActive { get; set; }
 
+    public int? LoginCount { get; set; }
+
     public virtual ICollection<Declaration> Declarations { get; set; } = new List<Declaration>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

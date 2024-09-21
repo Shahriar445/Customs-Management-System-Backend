@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Xml.Linq;
+using System.Linq;
 
 namespace Customs_Management_System.Repository
 {
@@ -626,7 +627,17 @@ namespace Customs_Management_System.Repository
 
 
 
-
+        public async Task<List<UserActivityDto>> GetUserActivitiesAsync()
+        {
+            return await _context.Users
+                .Where(u => u.IsActive) 
+                .Select(u => new UserActivityDto
+                {
+                    Name = u.UserName,
+                    Value = (int)u.LoginCount // This is your "activity" value
+                })
+                .ToListAsync();
+        }
 
 
 

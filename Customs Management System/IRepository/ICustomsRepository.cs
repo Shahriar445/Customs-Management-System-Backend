@@ -49,6 +49,9 @@ namespace Customs_Management_System.IRepository
 
         Task<IEnumerable<PaymentDto>> GetPaymentHistoryAsync();
 
+        Task<List<UserActivityDto>> GetUserActivitiesAsync();
+
+
 
 
     }

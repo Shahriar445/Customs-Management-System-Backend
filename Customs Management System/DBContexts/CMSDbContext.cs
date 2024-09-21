@@ -246,6 +246,7 @@ public partial class CMSDbContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false);
             entity.Property(e => e.IsActive).HasColumnName("isActive");
+            entity.Property(e => e.LoginCount).HasDefaultValue(0);
             entity.Property(e => e.Password)
                 .HasMaxLength(255)
                 .IsUnicode(false);

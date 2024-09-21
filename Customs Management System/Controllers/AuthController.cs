@@ -71,7 +71,9 @@ namespace Customs_Management_System.Controllers
                 UserRoleId = roleId,
                 CreateDate = DateTime.UtcNow,
                 CreateAt = DateTime.UtcNow,
-                IsActive = false // Set IsActive to false initially
+                IsActive = false, // Set IsActive to false initially
+                LoginCount = 0 // Initialize LoginCount to 0
+
             };
 
             // Add user to the context
@@ -152,7 +154,10 @@ namespace Customs_Management_System.Controllers
                     _logger.LogWarning("Inactive user login attempt for username: {UserName}", loginRequest.UserName);
                     return Unauthorized(new { message = "Your account is not active. Please contact the admin." });
                 }
-
+                // Increment login count
+                user.LoginCount++;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync(); // Ensure this line is executed
                 var response = new LoginResponseDto
                 {
                     UserId= user.UserId,

@@ -713,9 +713,6 @@ namespace Customs_Management_System.Controllers
             }
             catch (Exception ex)
             {
-                // Handle any errors that occur during the PDF generation or file download
-                // Log the exception if needed
-                // Return a status code or error message to the client
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
@@ -729,17 +726,13 @@ namespace Customs_Management_System.Controllers
 
 
 
-
-
-        // payment 
-        
-       
-
-
-
-
-
-
+        // GET: api/adminmonitor
+        [HttpGet("/admin-monitor")]
+        public async Task<ActionResult<IEnumerable<UserActivityDto>>> GetUserActivity()
+        {
+            var userActivities = await _customsRepo.GetUserActivitiesAsync();
+            return Ok(userActivities);
+        }
 
 
 
