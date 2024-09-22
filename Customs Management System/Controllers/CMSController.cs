@@ -46,6 +46,33 @@ namespace Customs_Management_System.Controllers
          
          */
 
+        [HttpGet("/product-categories")]
+        public async Task<ActionResult<IEnumerable<CategoryInfoDto>>> GetCategories()
+        {
+            var categories = await _context.ProductPrices
+                .Select(p => new CategoryInfoDto
+                {
+                    Category = p.Category,
+                    MaxWeight =
+                        p.Category == "electronics" ? 50 :
+                        p.Category == "clothing" ? 20 :
+                        p.Category == "furniture" ? 200 :
+                        p.Category == "food" ? 100 : 0,
+                    WeightUnit =
+                        p.Category == "electronics" || p.Category == "furniture" ? "pieces" : "kg",
+                    MaxQuantity =
+                        p.Category == "electronics" ? 10 :
+                        p.Category == "clothing" ? 50 :
+                        p.Category == "furniture" ? 5 :
+                        p.Category == "food" ? 20 : 0
+                })
+                .Distinct()
+                .ToListAsync();
+
+            return Ok(categories);
+        }
+
+
         [HttpPost("/CreateDeclarationImporter")]
         public async Task<IActionResult> CreateDeclaration(DeclarationDto declarationDto)
         {
