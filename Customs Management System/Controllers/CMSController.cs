@@ -215,7 +215,34 @@ namespace Customs_Management_System.Controllers
             return Ok(new { Message = "Payment submitted successfully" });
         }
 
+       //Importr Clander api 
+        [HttpGet("importer/events/{userId}")]
+        public async Task<IActionResult> GetImporterCalendarEvents(int userId)
+        {
+            var declarations = await _context.Declarations
+                .Where(d => d.UserId == userId)
+                .Select(d => new CalendarEventDto
+                {
+                    Id = d.DeclarationId,
+                    Title = "Declaration",
+                    Start = d.DeclarationDate,
+                    Status = d.Status
+                }).ToListAsync();
 
+            var shipments = await _context.Shipments
+                .Where(s => s.Declaration.UserId == userId)
+                .Select(s => new CalendarEventDto
+                {
+                    Id = s.ShipmentId,
+                    Title = "Shipment",
+                    Start = s.DepartureDate,
+                    End = s.ArrivalDate,
+                    Status = s.Status
+                }).ToListAsync();
+
+            var events = declarations.Concat(shipments).ToList();
+            return Ok(events);
+        }
 
 
         //-------------------------------------------------------------- importer dashboard api 
@@ -265,6 +292,35 @@ namespace Customs_Management_System.Controllers
 
         */
 
+        //exporter calender api 
+
+        [HttpGet("exporter/events/{userId}")]
+        public async Task<IActionResult> GetExporterCalendarEvents(int userId)
+        {
+            var declarations = await _context.Declarations
+                .Where(d => d.UserId == userId)
+                .Select(d => new CalendarEventDto
+                {
+                    Id = d.DeclarationId,
+                    Title = "Declaration",
+                    Start = d.DeclarationDate,
+                    Status = d.Status
+                }).ToListAsync();
+
+            var shipments = await _context.Shipments
+                .Where(s => s.Declaration.UserId == userId)
+                .Select(s => new CalendarEventDto
+                {
+                    Id = s.ShipmentId,
+                    Title = "Shipment",
+                    Start = s.DepartureDate,
+                    End = s.ArrivalDate,
+                    Status = s.Status
+                }).ToListAsync();
+
+            var events = declarations.Concat(shipments).ToList();
+            return Ok(events);
+        }
 
         [HttpGet("/Exporter_Dashboard")]
         public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForExporter()
