@@ -332,32 +332,39 @@ namespace Customs_Management_System.Repository
 
         public async Task<CustomesDashboardSummaryDto> GetImporterSummaryAsync()
         {
-            // Step 1: Retrieve UserIds for active Importers
+           
             var importerUserIds = await _context.Users
                 .Where(u => u.UserRoleId == 2 && u.IsActive)
                 .Select(u => u.UserId)
                 .ToListAsync();
-
-            // Step 2: Count active declarations for these UserIds
+           
             var totalDeclarations = await _context.Declarations
-                .Where(d => importerUserIds.Contains(d.UserId) )
+                .Where(d => importerUserIds.Contains(d.UserId))
                 .CountAsync();
 
-            // Count pending shipments for Importers
-            var pendingShipments = await _context.Shipments
-                .Where(s => s.Status == "Pending" && s.Declaration.User.UserRoleId == 2 && s.Declaration.IsActive)
+           
+            var pendingShipments = await _context.Declarations
+                .Where(d => d.Status == "Pending" && importerUserIds.Contains(d.UserId))
                 .CountAsync();
 
-            // Count running shipments for Importers
             var runningShipments = await _context.Shipments
-                .Where(s => s.Status == "Running" && s.Declaration.User.UserRoleId == 2 && s.Declaration.IsActive)
+                .Where(s => s.Status == "Approved" &&
+                            importerUserIds.Contains(s.Declaration.UserId))
                 .CountAsync();
+
+           
+            var completedShipments = await _context.Shipments
+                .Where(s => s.Status == "Completed" &&
+                            importerUserIds.Contains(s.Declaration.UserId))
+                .CountAsync();
+            ;
 
             return new CustomesDashboardSummaryDto
             {
                 TotalDeclarations = totalDeclarations,
                 PendingShipments = pendingShipments,
-                RunningShipments = runningShipments
+                RunningShipments = runningShipments,
+                CompletedShipments=completedShipments
             };
         }
         public async Task<CustomesDashboardSummaryDto> GetExporterSummaryAsync()
@@ -374,20 +381,29 @@ namespace Customs_Management_System.Repository
                 .CountAsync();
 
             // Count pending shipments for Exporters
-            var pendingShipments = await _context.Shipments
-                .Where(s => s.Status == "Pending" && s.Declaration.User.UserRoleId == 3 && s.Declaration.IsActive)
+            var pendingShipments = await _context.Declarations
+                .Where(d => d.Status == "Pending" && exporterUserIds.Contains(d.UserId))
                 .CountAsync();
 
             // Count running shipments for Exporters
             var runningShipments = await _context.Shipments
-                .Where(s => s.Status == "Running" && s.Declaration.User.UserRoleId == 3 && s.Declaration.IsActive)
+                .Where(s => s.Status == "Approved" &&
+                            exporterUserIds.Contains(s.Declaration.UserId) )
                 .CountAsync();
+
+            // Count running shipments for Exporters
+            var completedShipments = await _context.Shipments
+                .Where(s => s.Status == "Completed" &&
+                            exporterUserIds.Contains(s.Declaration.UserId))
+                .CountAsync();
+            ;
 
             return new CustomesDashboardSummaryDto
             {
                 TotalDeclarations = totalDeclarations,
                 PendingShipments = pendingShipments,
-                RunningShipments = runningShipments
+                RunningShipments = runningShipments,
+                CompletedShipments=completedShipments
             };
         }
 
@@ -595,6 +611,7 @@ namespace Customs_Management_System.Repository
                     Date = p.Date,
                     Status = p.Status,
                     DeclarationId = p.DeclarationId,
+                    
                     ProductName = _context.Products.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
                 })
                 .ToListAsync();

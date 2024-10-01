@@ -16,6 +16,7 @@ using iTextSharp.text;
 using System.Xml.Linq;
 using PdfSharp.Pdf;
 using PdfSharp.Drawing;
+using Microsoft.ML;
 
 namespace Customs_Management_System.Controllers
 {
@@ -586,19 +587,42 @@ namespace Customs_Management_System.Controllers
 
         //----------------------------------customes officer api -------------
 
-        // API for Exporters
         [HttpGet("importer-summary")]
         public async Task<ActionResult<CustomesDashboardSummaryDto>> GetImporterSummary()
         {
-            var summary = await _customsRepo.GetImporterSummaryAsync();
-            return Ok(summary);
+            try
+            {
+                var summary = await _customsRepo.GetImporterSummaryAsync();
+                if (summary == null)
+                {
+                    return NotFound("No summary found for importers.");
+                }
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (optional)
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving importer summary: {ex.Message}");
+            }
         }
 
         [HttpGet("exporter-summary")]
         public async Task<ActionResult<CustomesDashboardSummaryDto>> GetExporterSummary()
         {
-            var summary = await _customsRepo.GetExporterSummaryAsync();
-            return Ok(summary);
+            try
+            {
+                var summary = await _customsRepo.GetExporterSummaryAsync();
+                if (summary == null)
+                {
+                    return NotFound("No summary found for exporters.");
+                }
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (optional)
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving exporter summary: {ex.Message}");
+            }
         }
 
         [HttpGet("PendingDeclarations")]
@@ -621,47 +645,59 @@ namespace Customs_Management_System.Controllers
         [HttpGet("PendingShipments")]
         public async Task<IActionResult> GetPendingShipments()
         {
-            var pendingShipments = await _context.Shipments
-                .Include(s => s.Declaration)
-                .Where(s => s.Status == "Pending")
-                .Select(s => new
-                {
-                    s.ShipmentId,
-                    s.DeclarationId,
-                    s.MethodOfShipment,
-                    s.PortOfDeparture,
-                    s.PortOfDestination,
-                    s.DepartureDate,
-                    s.ArrivalDate,
-                    DeclarationStatus = s.Declaration.Status,
-                    s.Declaration.UserId,
-                    Payments = _context.Payments
-                        .Where(p => p.DeclarationId == s.DeclarationId && p.Status == "Pending")
-                        .Select(p => new { p.PaymentId, p.Amount, p.Date })
-                        .ToList() // Convert IQueryable to List
-                })
-                .ToListAsync();
+
+
+            var pendingShipments = from s in _context.Shipments.Where(s => s.Status == """Pending""")
+                                   join d in _context.Declarations on s.DeclarationId equals d.DeclarationId
+                                   join u in _context.Users on d.UserId equals u.UserId
+                                   join r in _context.Roles on u.UserRoleId equals r.RoleId
+                                   join p in _context.Payments on new { d.UserId, d.DeclarationId } equals new { p.UserId, p.DeclarationId } into payments
+                                   from payment in payments.DefaultIfEmpty() // Left join to handle cases with no payments
+                                   select new
+                                   {
+                                       s.ShipmentId,
+                                       s.DeclarationId,
+                                       s.MethodOfShipment,
+                                       s.PortOfDeparture,
+                                       s.PortOfDestination,
+                                       DepartureDate = s.DepartureDate.ToString("yyyy-MM-dd"),
+                                       ArrivalDate = s.ArrivalDate.ToString("yyyy-MM-dd"),
+                                       ShipmentStatus = s.Status,
+                                       UserName = u.UserName,
+                                       UserRole = r.RoleName,
+                                       DeclarationStatus = d.Status,
+                                       paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
+                                   };
+
 
             return Ok(pendingShipments);
         }
 
         [HttpGet("GetRunningShipments")]
-        public async Task<IActionResult> GetRunningShipments()
+        public IActionResult GetRunningShipments()
         {
-            var runningShipments = _context.Shipments
-                .Where(s => s.Status == "Running")
-                .Select(s => new
-                {
-                    s.ShipmentId,
-                    s.DeclarationId,
-                    s.MethodOfShipment,
-                    s.PortOfDeparture,
-                    s.PortOfDestination,
-                    s.DepartureDate,
-                    s.ArrivalDate,
+            var runningShipments = from s in _context.Shipments.Where(s => s.Status == """Approved""")
+            join d in _context.Declarations on s.DeclarationId equals d.DeclarationId
+            join u in _context.Users on d.UserId equals u.UserId
+            join r in _context.Roles on u.UserRoleId equals r.RoleId
+            join p in _context.Payments on new { d.UserId, d.DeclarationId } equals new { p.UserId, p.DeclarationId } into payments
+            from payment in payments.DefaultIfEmpty() // Left join to handle cases with no payments
+            select new
+            {
+                s.ShipmentId,
+                s.DeclarationId,
+                s.MethodOfShipment,
+                s.PortOfDeparture,
+                s.PortOfDestination,
+                DepartureDate = s.DepartureDate.ToString("yyyy-MM-dd"),
+                ArrivalDate = s.ArrivalDate.ToString("yyyy-MM-dd"),
+                ShipmentStatus = s.Status,
+                UserName = u.UserName,
+                UserRole = r.RoleName,
+                DeclarationStatus = d.Status,
+                paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
+            };
 
-                })
-                .ToList();
 
             return Ok(runningShipments);
         }
@@ -680,7 +716,8 @@ namespace Customs_Management_System.Controllers
                     s.PortOfDeparture,
                     s.PortOfDestination,
                     s.DepartureDate,
-                    s.ArrivalDate
+                    s.ArrivalDate,
+                    paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
                 })
                 .ToList();
 
@@ -710,7 +747,7 @@ namespace Customs_Management_System.Controllers
                                 UserName = u.UserName,
                                 UserRole = r.RoleName,
                                 DeclarationStatus = d.Status,
-                                PaymentStatus = payment != null ? payment.Status : "No Payment"
+                                paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
                             };
 
             var result = await shipments.ToListAsync();
@@ -741,10 +778,40 @@ namespace Customs_Management_System.Controllers
 
             shipment.Status = "Approved";
             shipment.Declaration.Status = "Approved";
+            shipment.Declaration.IsActive=true;
 
             await _context.SaveChangesAsync();
 
             return Ok("Shipment approved successfully.");
+        }
+        [HttpPost("CompletedShipment/{shipmentId}")]
+        public async Task<IActionResult> Completed(int shipmentId)
+        {
+            var shipment = await _context.Shipments
+                .Include(s => s.Declaration)
+                .FirstOrDefaultAsync(s => s.ShipmentId == shipmentId);
+
+            if (shipment == null)
+            {
+                return NotFound("Shipment not found.");
+            }
+
+            var payments = await _context.Payments
+                .Where(p => p.DeclarationId == shipment.DeclarationId && p.Status == "Completed")
+                .ToListAsync();
+
+            if (!payments.Any())
+            {
+                return BadRequest("Payment not completed for this declaration.");
+            }
+
+            shipment.Status = "Completed";
+            shipment.Declaration.Status = "Completed";
+            shipment.Declaration.IsActive=true;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Shipment Completed successfully.");
         }
 
         // POST: api/CustomsOfficer/RejectShipment/{shipmentId}
@@ -767,11 +834,42 @@ namespace Customs_Management_System.Controllers
         }
 
 
-       
+        // POST: api/Shipments/RevertShipmentToPending/{shipmentId}
+        [HttpPost("RevertShipmentToPending/{shipmentId}")]
+        public async Task<IActionResult> RevertShipmentToPending(int shipmentId)
+        {
+            if (shipmentId <= 0)
+            {
+                return BadRequest("Invalid shipment ID.");
+            }
+
+            // Find the shipment in the database
+            var shipment = await _context.Shipments.FindAsync(shipmentId);
+            if (shipment == null)
+            {
+                return NotFound(new { message = "Shipment not found." });
+            }
+
+            // Check if the shipment is in 'Rejected' status
+            if (shipment.Status != "Rejected")
+            {
+                return BadRequest(new { message = "Shipment is not in a rejected state." });
+            }
+
+            // Change the status to 'Pending'
+            shipment.Status = "Pending";
+
+            // Update the shipment entity in the database
+            _context.Shipments.Update(shipment);
+            await _context.SaveChangesAsync(); // Save changes to the database
+
+            return Ok(new { message = "Shipment reverted to pending successfully." });
+        }
+    
 
 
-          
-        [HttpGet("/Get-officer-report")]
+
+    [HttpGet("/Get-officer-report")]
         public async Task<ActionResult<IEnumerable<ReportDto>>> GetCustomsOfficerReport()
         {
             var reports = await _customsRepo.GetCustomsOfficerReportsAsync();

@@ -38,7 +38,7 @@ namespace Customs_Management_System.Repository
                 { "store_id", _storeId },
                 { "store_passwd", _storePassword },
                 { "total_amount", totalAmount.ToString("F2") },
-                { "currency", "BDT" },
+                { "currency", "USD" },
                 { "tran_id", transactionId },
                 { "success_url", successUrl },
                 { "fail_url", failUrl },
