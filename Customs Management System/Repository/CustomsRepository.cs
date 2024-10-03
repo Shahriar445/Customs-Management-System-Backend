@@ -143,11 +143,11 @@ namespace Customs_Management_System.Repository
                         DepartureDate = m.DepartureDate,
                         ArrivalDate = m.ArrivalDate,
                         Status = m.Status,
-                        ProductName = m.Declaration.Products.FirstOrDefault().ProductName ?? "N/A", // Default value if no products
-                        Quantity = m.Declaration.Products.FirstOrDefault().Quantity  , // Default value if no products
-                        Weight = (double)m.Declaration.Products.FirstOrDefault().Weight, // Default value if no products
-                        CountryOfOrigin = m.Declaration.Products.FirstOrDefault().CountryOfOrigin ?? "N/A", // Default value if no products
-                        Hscode = m.Declaration.Products.FirstOrDefault().Hscode ?? "N/A" // Default value if no products
+                        ProductName = m.Declaration.Products.FirstOrDefault()?.ProductName ?? "N/A", // Default value if no products
+                        Quantity = m.Declaration.Products.FirstOrDefault()?.Quantity ?? 0, // Default value if no products
+                        Weight = (double)(m.Declaration.Products.FirstOrDefault()?.Weight ?? 0), // Default value if no products
+                        CountryOfOrigin = m.Declaration.Products.FirstOrDefault()?.CountryOfOrigin ?? "N/A", // Default value if no products
+                        Hscode = m.Declaration.Products.FirstOrDefault()?.Hscode ?? "N/A" // Default value if no products
                     })
                     .ToListAsync();
 
