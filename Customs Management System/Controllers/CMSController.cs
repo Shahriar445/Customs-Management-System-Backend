@@ -114,20 +114,15 @@ namespace Customs_Management_System.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
-        [Authorize(Roles = "Importer")]
-        [HttpGet("GetMonitoringImporter")]
-        public async Task<ActionResult<List<MonitoringDto>>> GetMonitorings()
+
+        [HttpGet("GetUserMonitorings/{userId}")]
+        public async Task<IActionResult> GetUserMonitorings(int userId)
         {
-            try
-            {
-                var monitorings = await _customsRepo.GetMonitoringsAsync();
-                return Ok(monitorings);
-            }
-            catch (Exception e)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
-            }
+            var monitorings = await _customsRepo.GetUserMonitoringsAsync(userId);
+            return Ok(monitorings);
         }
+
+
         [HttpGet("GetProductsByCategory")]
         public async Task<IActionResult> GetProductsByCategory([FromQuery] string category)
         {
@@ -216,37 +211,10 @@ namespace Customs_Management_System.Controllers
             return Ok(new { Message = "Payment submitted successfully" });
         }
 
-       //Importr Clander api 
-        [HttpGet("importer/events/{userId}")]
-        public async Task<IActionResult> GetImporterCalendarEvents(int userId)
-        {
-            var declarations = await _context.Declarations
-                .Where(d => d.UserId == userId)
-                .Select(d => new CalendarEventDto
-                {
-                    Id = d.DeclarationId,
-                    Title = "Declaration",
-                    Start = d.DeclarationDate,
-                    Status = d.Status
-                }).ToListAsync();
-
-            var shipments = await _context.Shipments
-                .Where(s => s.Declaration.UserId == userId)
-                .Select(s => new CalendarEventDto
-                {
-                    Id = s.ShipmentId,
-                    Title = "Shipment",
-                    Start = s.DepartureDate,
-                    End = s.ArrivalDate,
-                    Status = s.Status
-                }).ToListAsync();
-
-            var events = declarations.Concat(shipments).ToList();
-            return Ok(events);
-        }
+      
 
 
-        //-------------------------------------------------------------- importer dashboard api 
+        //-------------------------------------------------------------- dashbord for importer and exporter 
 
         [HttpGet("dashboardOverview/{userId}")]
         public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForImporter(int userId)
@@ -282,6 +250,42 @@ namespace Customs_Management_System.Controllers
             return Ok(countrys);
         }
 
+
+        [HttpGet("Calender/events/{userId}")]
+        public async Task<IActionResult> GetExporterCalendarEvents(int userId)
+        {
+            // Fetch declarations with product names
+            var declarations = await _context.Declarations
+                .Where(d => d.UserId == userId)
+                .SelectMany(d => _context.ProductPrice
+                    .Where(p => p.DeclarationId == d.DeclarationId)
+                    .Select(p => new CalendarEventDto
+                    {
+                        Id = d.DeclarationId,
+                        Title = p.ProductName,
+                        Start = d.DeclarationDate,
+                        Status = d.Status
+                    })
+                ).ToListAsync();
+
+            var shipments = await _context.Shipments
+                .Where(s => s.Declaration.UserId == userId)
+                .SelectMany(s => _context.ProductPrice
+                    .Where(p => p.DeclarationId == s.DeclarationId)
+                    .Select(p => new CalendarEventDto
+                    {
+                        Id = s.ShipmentId,
+                        Title = s.MethodOfShipment,
+                        Start = s.DepartureDate,
+                        End = s.ArrivalDate,
+                        Status = s.Status
+                    })
+                ).ToListAsync();
+
+            var events = declarations.Concat(shipments).ToList();
+            return Ok(events);
+        }
+
         //------------------------------------------------------------------Exporter api --------------------------------------------------------------------------------------------------
         /*                              Total  api 
                                                            1. Declaration submit---- done
@@ -293,49 +297,10 @@ namespace Customs_Management_System.Controllers
 
         */
 
-        //exporter calender api 
 
-        [HttpGet("exporter/events/{userId}")]
-        public async Task<IActionResult> GetExporterCalendarEvents(int userId)
-        {
-            var declarations = await _context.Declarations
-                .Where(d => d.UserId == userId)
-                .Select(d => new CalendarEventDto
-                {
-                    Id = d.DeclarationId,
-                    Title = "Declaration",
-                    Start = d.DeclarationDate,
-                    Status = d.Status
-                }).ToListAsync();
 
-            var shipments = await _context.Shipments
-                .Where(s => s.Declaration.UserId == userId)
-                .Select(s => new CalendarEventDto
-                {
-                    Id = s.ShipmentId,
-                    Title = "Shipment",
-                    Start = s.DepartureDate,
-                    End = s.ArrivalDate,
-                    Status = s.Status
-                }).ToListAsync();
 
-            var events = declarations.Concat(shipments).ToList();
-            return Ok(events);
-        }
 
-        [HttpGet("/Exporter_Dashboard")]
-        public async Task<ActionResult<DashboardOverViewDto>> GetDashboardOverviewForExporter()
-        {
-            try
-            {
-                var dashboardOverview = await _customsRepo.GetDashboardOverviewExporter();
-                return Ok(dashboardOverview);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
 
         [HttpPost("/CreateDeclarationExporter")]
         public async Task<IActionResult> CreateDeclarationExporters(DeclarationDto declarationDto)
@@ -351,6 +316,58 @@ namespace Customs_Management_System.Controllers
             }
         }
 
+
+        [HttpGet("/Importer-monitoring")]
+        public async Task<ActionResult<ExporterMonitorDto>> GetMonitorOverview()
+        {
+            try
+            {
+                // Role ID for Importer
+                int exporterRoleId = 2;
+
+                var exporterUserIds = await _context.Users
+                                                    .Where(u => u.UserRoleId == exporterRoleId)
+                                                    .Select(u => u.UserId)
+                                                    .ToListAsync();
+
+                if (exporterUserIds == null || !exporterUserIds.Any())
+                {
+                    return NotFound("No users found with the role of Exporter.");
+                }
+
+                // Total processed shipments for Exporters
+                int processedShipments = await _context.Declarations
+                                                        .Where(d => d.IsActive == true && exporterUserIds.Contains(d.UserId))
+                                                        .CountAsync();
+
+                // Total pending shipments for Exporters
+                int pendingShipments = await _context.Declarations
+                                                     .Where(d => d.IsActive == false && exporterUserIds.Contains(d.UserId))
+                                                     .CountAsync();
+
+                // Define a custom status based on your criteria
+                string currentStatus = processedShipments > 0 ? "Operational" : "Not Operational";
+
+                // Example clearance rate calculation
+                double clearanceRate = (processedShipments + pendingShipments) > 0
+                    ? (double)processedShipments / (processedShipments + pendingShipments) * 100
+                    : 0.0;
+
+                var monitoringData = new ExporterMonitorDto
+                {
+                    ShipmentsProcessed = processedShipments,
+                    ShipmentPending = pendingShipments,
+                    CurrentStatus = currentStatus,
+                    CustomsClearanceRate = clearanceRate
+                };
+
+                return Ok(monitoringData);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
 
 
         [HttpGet("/Exporter-monitoring")]
@@ -402,10 +419,6 @@ namespace Customs_Management_System.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception details (optional)
-                // _logger.LogError(ex, "An error occurred while fetching the monitoring overview.");
-
-                // Return a 500 Internal Server Error with a custom message
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -582,6 +595,92 @@ namespace Customs_Management_System.Controllers
             };
 
             return Ok(report);
+        }
+
+        [Authorize(Roles = "Admin")]
+        // POST: api/ProductPrices
+        [HttpPost("/addProduct")]
+        public async Task<IActionResult> AddProduct([FromBody] ProductPrice productPrice)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var existingProduct = await _context.ProductPrices
+                .FirstOrDefaultAsync(p => p.Category == productPrice.Category && p.ProductName == productPrice.ProductName);
+
+            if (existingProduct != null)
+            {
+                return Conflict(new { message = "A product with the same category and name already exists." });
+            }
+            try
+            {
+                // Add the new product to the database
+                _context.ProductPrices.Add(productPrice);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Product added successfully!" });
+            }
+            catch (Exception ex)
+            {
+                
+                return StatusCode(500, new { message = "An error occurred while adding the product.", error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        
+        [HttpPut("updateProduct/{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto productDto)
+        {
+            var existingProduct = await _context.ProductPrices.FindAsync(id);
+
+            if (existingProduct == null)
+            {
+                return NotFound(new { message = "Product not found." });
+            }
+
+            // Update product details
+            existingProduct.Category = productDto.Category;
+            existingProduct.ProductName = productDto.ProductName;
+            existingProduct.Price = productDto.Price;
+            existingProduct.HsCode = productDto.HsCode;
+
+            _context.ProductPrices.Update(existingProduct);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Product updated successfully." });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deleteProduct/{id}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            var product = await _context.ProductPrices.FindAsync(id);
+
+            if (product == null)
+            {
+                return NotFound(new { message = "Product not found." });
+            }
+
+            _context.ProductPrices.Remove(product);
+            await _context.SaveChangesAsync();
+            
+
+            var maxId = _context.ProductPrices.Any() ? _context.ProductPrices.Max(p => p.PriceId) : 0;
+            if (maxId > 0)
+            {
+                await _context.Database.ExecuteSqlRawAsync($"DBCC CHECKIDENT ('ProductPrices', RESEED, {maxId});");
+            }
+
+            return Ok(new { message = "Product deleted successfully." });
+        }
+
+        [HttpGet("GetAllProduct")]
+        public async Task<ActionResult<IEnumerable<ProductPrice>>> GetAllProductPrices()
+        {
+            var productPrices = await _context.ProductPrices.ToListAsync();
+            return Ok(productPrices);
         }
 
 
@@ -771,6 +870,13 @@ namespace Customs_Management_System.Controllers
                 .Where(p => p.DeclarationId == shipment.DeclarationId && p.Status == "Completed")
                 .ToListAsync();
 
+            var monitoring = await _context.Monitorings
+                .FirstOrDefaultAsync(m => m.DeclarationId==shipment.DeclarationId);
+            if (monitoring==null)
+            {
+                return NotFound("Monitoring record not found for this declaration");
+            }
+
             if (!payments.Any())
             {
                 return BadRequest("Payment not completed for this declaration.");
@@ -779,6 +885,7 @@ namespace Customs_Management_System.Controllers
             shipment.Status = "Approved";
             shipment.Declaration.Status = "Approved";
             shipment.Declaration.IsActive=true;
+            monitoring.Status="Running";
 
             await _context.SaveChangesAsync();
 
@@ -805,10 +912,17 @@ namespace Customs_Management_System.Controllers
                 return BadRequest("Payment not completed for this declaration.");
             }
 
+            var monitoring = await _context.Monitorings
+                .FirstOrDefaultAsync(m => m.DeclarationId==shipment.DeclarationId);
+            if (monitoring==null)
+            {
+                return NotFound("Monitoring record not found for this declaration");
+            }
+
             shipment.Status = "Completed";
             shipment.Declaration.Status = "Completed";
             shipment.Declaration.IsActive=true;
-
+            monitoring.Status = shipment.Status = "Completed";
             await _context.SaveChangesAsync();
 
             return Ok("Shipment Completed successfully.");
@@ -825,6 +939,14 @@ namespace Customs_Management_System.Controllers
             {
                 return NotFound("Shipment not found.");
             }
+
+            var monitoring = await _context.Monitorings
+                .FirstOrDefaultAsync(m => m.DeclarationId==shipment.DeclarationId);
+            if (monitoring==null)
+            {
+                return NotFound("Monitoring record not found for this declaration");
+            }
+            monitoring.Status="Rejected";
 
             shipment.Status = "Rejected";
 
@@ -856,9 +978,16 @@ namespace Customs_Management_System.Controllers
                 return BadRequest(new { message = "Shipment is not in a rejected state." });
             }
 
+            var monitoring = await _context.Monitorings
+                .FirstOrDefaultAsync(m => m.DeclarationId==shipment.DeclarationId);
+            if (monitoring==null)
+            {
+                return NotFound("Monitoring record not found for this declaration");
+            }
+
             // Change the status to 'Pending'
             shipment.Status = "Pending";
-
+            monitoring.Status="Pending";
             // Update the shipment entity in the database
             _context.Shipments.Update(shipment);
             await _context.SaveChangesAsync(); // Save changes to the database

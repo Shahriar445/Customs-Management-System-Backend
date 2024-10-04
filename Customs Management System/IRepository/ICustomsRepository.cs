@@ -11,7 +11,7 @@ namespace Customs_Management_System.IRepository
 
         Task<string> CreateDeclarationAsync(DeclarationDto declaration);
         Task<string> CreateDeclarationExporters(DeclarationDto declaration);
-        Task<List<MonitoringDto>> GetMonitoringsAsync( );
+        Task<List<MonitoringDto>> GetUserMonitoringsAsync (int userId);
         Task<IEnumerable<ProductPriceDto>> GetProductsByCategoryAsync(string category);
 
 
@@ -21,16 +21,14 @@ namespace Customs_Management_System.IRepository
         Task AddPaymentAsync(Payment payment);
 
 
-       
+
+        
 
         //dashboard 
-       
+
         Task<DashboardOverViewDto> GetDashboardOverviewAsync(int userId);
 
-        // --------------------Exporter part  
-
-      
-        Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter();
+     
 
         //----------------------- customes officer  ----------------
 

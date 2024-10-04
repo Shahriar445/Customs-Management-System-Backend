@@ -64,14 +64,14 @@ namespace Customs_Management_System.Repository
 
         public async Task<decimal> GetTotalAmountByDeclarationAsync(int declarationId)
         {
-            return (decimal)await _context.Products
+            return (decimal)await _context.ProductPrice
                 .Where(p => p.DeclarationId == declarationId)
                 .SumAsync(p => p.TotalPrice);
         }
 
         public async Task UpdateProductPaymentStatusAsync(int declarationId)
         {
-            var products = await _context.Products
+            var products = await _context.ProductPrice
                 .Where(p => p.DeclarationId == declarationId)
                 .ToListAsync();
 
@@ -82,7 +82,7 @@ namespace Customs_Management_System.Repository
                 product.IsPayment = true; // Assuming IsPayment is a boolean field
             }
 
-            _context.Products.UpdateRange(products);
+            _context.ProductPrice.UpdateRange(products);
 
             var declaration = await _context.Declarations
                 .FirstOrDefaultAsync(d => d.DeclarationId == declarationId);

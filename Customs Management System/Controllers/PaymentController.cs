@@ -66,7 +66,7 @@ public class PaymentController : ControllerBase
             await _paymentService.UpdateProductPaymentStatusAsync(declarationId);
 
             var userId = await _paymentService.GetUserIdByDeclarationIdAsync(declarationId);
-            var product = await _context.Products
+            var product = await _context.ProductPrice
            .FirstOrDefaultAsync(p => p.DeclarationId == declarationId);
             var payment = new Payment
             {

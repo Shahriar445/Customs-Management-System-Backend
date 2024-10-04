@@ -22,7 +22,7 @@ public partial class CMSDbContext : DbContext
 
     public virtual DbSet<Payment> Payments { get; set; }
 
-    public virtual DbSet<Product> Products { get; set; }
+    public virtual DbSet<Product> ProductPrice { get; set; }
 
     public virtual DbSet<ProductPrice> ProductPrices { get; set; }
 

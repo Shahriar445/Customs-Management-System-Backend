@@ -43,7 +43,7 @@ namespace Customs_Management_System.Repository
             return products;
         }
 
-        
+      
         public async Task<string> CreateDeclarationAsync(DeclarationDto declarationDto)
         {
             try
@@ -124,18 +124,53 @@ namespace Customs_Management_System.Repository
 
 
 
-        public async Task<List<MonitoringDto>> GetMonitoringsAsync()
+        //public async Task<List<MonitoringDto>> GetMonitoringsAsync()
+        //{
+        //    try
+        //    {
+        //        var monitorings = await _context.Monitorings
+        //            .Include(m => m.Declaration)
+        //            .ThenInclude(d => d.Products)
+        //            .Include(m => m.Declaration)
+        //            .ThenInclude(d => d.Shipments)
+        //            .Select(m => new MonitoringDto
+        //            {
+
+        //                DeclarationId = m.DeclarationId,
+        //                MethodOfShipment = m.MethodOfShipment,
+        //                PortOfDeparture = m.PortOfDeparture,
+        //                PortOfDestination = m.PortOfDestination,
+        //                DepartureDate = m.DepartureDate,
+        //                ArrivalDate = m.ArrivalDate,
+        //                Status = m.Status,
+        //                ProductName = m.Declaration.Products.FirstOrDefault().ProductName ?? "N/A", // Default value if no products
+        //                Quantity = m.Declaration.Products.FirstOrDefault().Quantity  , // Default value if no products
+        //                Weight = (double)m.Declaration.Products.FirstOrDefault().Weight, // Default value if no products
+        //                CountryOfOrigin = m.Declaration.Products.FirstOrDefault().CountryOfOrigin ?? "N/A", // Default value if no products
+        //                Hscode = m.Declaration.Products.FirstOrDefault().Hscode ?? "N/A" // Default value if no products
+        //            })
+        //            .ToListAsync();
+
+        //        return monitorings;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        throw new Exception($"An unexpected error occurred. Details: {e.Message}");
+        //    }
+        //}
+
+        public async Task<List<MonitoringDto>> GetUserMonitoringsAsync(int userId)
         {
             try
             {
                 var monitorings = await _context.Monitorings
                     .Include(m => m.Declaration)
-                    .ThenInclude(d => d.Products)
+                        .ThenInclude(d => d.Products)
                     .Include(m => m.Declaration)
-                    .ThenInclude(d => d.Shipments)
+                        .ThenInclude(d => d.Shipments)
+                    .Where(m => m.Declaration.UserId == userId) // Filter for the specific user ID
                     .Select(m => new MonitoringDto
                     {
-                        
                         DeclarationId = m.DeclarationId,
                         MethodOfShipment = m.MethodOfShipment,
                         PortOfDeparture = m.PortOfDeparture,
@@ -143,11 +178,11 @@ namespace Customs_Management_System.Repository
                         DepartureDate = m.DepartureDate,
                         ArrivalDate = m.ArrivalDate,
                         Status = m.Status,
-                        ProductName = m.Declaration.Products.FirstOrDefault()?.ProductName ?? "N/A", // Default value if no products
-                        Quantity = m.Declaration.Products.FirstOrDefault()?.Quantity ?? 0, // Default value if no products
-                        Weight = (double)(m.Declaration.Products.FirstOrDefault()?.Weight ?? 0), // Default value if no products
-                        CountryOfOrigin = m.Declaration.Products.FirstOrDefault()?.CountryOfOrigin ?? "N/A", // Default value if no products
-                        Hscode = m.Declaration.Products.FirstOrDefault()?.Hscode ?? "N/A" // Default value if no products
+                        ProductName = m.Declaration.Products.FirstOrDefault().ProductName ?? "N/A", 
+                        Quantity = m.Declaration.Products.FirstOrDefault().Quantity  , 
+                        Weight = (double)m.Declaration.Products.FirstOrDefault().Weight,
+                        CountryOfOrigin = m.Declaration.Products.FirstOrDefault().CountryOfOrigin ?? "N/A", 
+                        Hscode = m.Declaration.Products.FirstOrDefault().Hscode ?? "N/A" 
                     })
                     .ToListAsync();
 
@@ -158,6 +193,8 @@ namespace Customs_Management_System.Repository
                 throw new Exception($"An unexpected error occurred. Details: {e.Message}");
             }
         }
+
+
         // payment 
         public async Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId)
         {
@@ -173,80 +210,73 @@ namespace Customs_Management_System.Repository
             await _context.SaveChangesAsync();
         }
 
-        //-----------For Dashboard overView importer
+        //-----------For Dashboard overView importer and exporter
 
-        public async Task<DashboardOverViewDto> GetDashboardOverviewAsync(int userId)
+       public async Task<DashboardOverViewDto> GetDashboardOverviewAsync(int userId)
+{
+    try
+    {
+
+        var importerUser = await _context.Users
+            .FirstOrDefaultAsync(u => u.UserId == userId );
+
+        if (importerUser == null)
         {
-            try
-            {
-                // Find the user with the given userId and RoleId == 2 (Importer)
-                var importerUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.UserId == userId && u.UserRoleId == 2);
-
-                if (importerUser == null)
-                {
-                    throw new Exception("Importer not found");
-                }
-
-                int totalDeclarations = await _context.Declarations
-                    .CountAsync(d => d.UserId == userId);
-
-                
-                int pendingPayments = await _context.Declarations
-                     .CountAsync(p => p.UserId == userId && p.IsPayment == false);
-
-
-                int shipmentMonitoring = await _context.Shipments
-                    .Include(s => s.Declaration)
-                    .CountAsync(s => s.Declaration.UserId == userId);
-
-                return new DashboardOverViewDto
-                {
-                    TotalDeclarations = totalDeclarations,
-                    PendingPayments = pendingPayments,
-                    ShipmentMonitoring = shipmentMonitoring
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"An unexpected error occurred while fetching dashboard overview: {ex.Message}");
-            }
+            throw new Exception("Importer not found");
         }
 
+     
+        int totalDeclarations = await _context.Declarations
+            .CountAsync(d => d.UserId == userId);
+
+
+              int pendingPayments = await _context.Declarations
+            .CountAsync(p => p.UserId == userId && p.IsPayment == false);
+
+                int shipmentMonitoring = await _context.Shipments
+            .Include(s => s.Declaration)
+            .CountAsync(s => s.Declaration.UserId == userId);
+
+        // Grouping monitoring records by status for the user
+        var shipmentCounts = await _context.Monitorings
+            .Include(m => m.Declaration)
+            .Where(m => m.Declaration.UserId == userId)
+            .GroupBy(m => m.Status)
+            .Select(g => new
+            {
+                Status = g.Key,
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        // Aggregate shipment counts based on status
+        int shipmentRunning = shipmentCounts.FirstOrDefault(s => s.Status == "Running")?.Count ?? 0;
+        int shipmentCompleted = shipmentCounts.FirstOrDefault(s => s.Status == "Completed")?.Count ?? 0;
+        int pendingShipment = shipmentCounts.FirstOrDefault(s => s.Status == "Pending")?.Count ?? 0;
+        int shipmentRejected = shipmentCounts.FirstOrDefault(s => s.Status == "Rejected")?.Count ?? 0;
+
+        // Return the dashboard overview data
+        return new DashboardOverViewDto
+        {
+            TotalDeclarations = totalDeclarations,
+            PendingPayments = pendingPayments,
+            ShipmentMonitoring = shipmentMonitoring,
+            TotalPendingShipment = pendingShipment,
+            TotalRunningShipmet = shipmentRunning,
+            TotalCompletedShipment = shipmentCompleted,
+            TotalRejectedShipment = shipmentRejected,
+        };
+    }
+    catch (Exception ex)
+    {
+        // Consider logging the exception for better diagnostics
+        throw new Exception($"An unexpected error occurred while fetching dashboard overview: {ex.Message}");
+    }
+}
 
 
         // -------------------------------------------------Exporter part ---------------------------------
-        public async Task<DashboardOverViewExporterDto> GetDashboardOverviewExporter()
-        {
-            try
-            {
-                // Find users with RoleId == 3 (Exporter)
-                var ExporterUsers = await _context.Users
-                    .Where(u => u.UserRoleId == 3)
-                    .ToListAsync();
-
-                int totalDeclarations = await _context.Declarations
-                    .CountAsync(d => ExporterUsers.Select(u => u.UserId).Contains(d.UserId));
-
-                int pendingPayments = await _context.Payments
-                    .CountAsync(p => ExporterUsers.Select(u => u.UserId).Contains(p.UserId) && p.Status == "Pending");
-
-                int shipmentMonitoring = await _context.Shipments
-                    .Include(s => s.Declaration)
-                    .CountAsync(s => ExporterUsers.Select(u => u.UserId).Contains(s.Declaration.UserId));
-
-                return new DashboardOverViewExporterDto
-                {
-                    TotalDeclarations = totalDeclarations,
-                    PendingPayments = pendingPayments,
-                    ShipmentMonitoring = shipmentMonitoring
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"An unexpected error occurred while fetching dashboard overview: {ex.Message}");
-            }
-        }
+       
 
 
         public async Task<string> CreateDeclarationExporters(DeclarationDto declarationDto)
@@ -483,7 +513,7 @@ namespace Customs_Management_System.Repository
                                  join r in _context.Roles on u.UserRoleId equals r.RoleId
                                  join p in _context.Payments on d.DeclarationId equals p.DeclarationId into paymentGroup
                                  from pg in paymentGroup.DefaultIfEmpty() // Left join with Payments
-                                 join pr in _context.Products on d.DeclarationId equals pr.DeclarationId into productGroup
+                                 join pr in _context.ProductPrice on d.DeclarationId equals pr.DeclarationId into productGroup
                                  from prg in productGroup.DefaultIfEmpty() // Left join with Products
                                  join pp in _context.ProductPrices on new { prg.Category, prg.ProductName } equals new { pp.Category, pp.ProductName } into priceGroup
                                  from ppg in priceGroup.DefaultIfEmpty() // Left join with ProductPrices
@@ -612,7 +642,7 @@ namespace Customs_Management_System.Repository
                     Status = p.Status,
                     DeclarationId = p.DeclarationId,
                     
-                    ProductName = _context.Products.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
+                    ProductName = _context.ProductPrice.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
                 })
                 .ToListAsync();
         }
