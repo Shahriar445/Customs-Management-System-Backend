@@ -257,7 +257,7 @@ namespace Customs_Management_System.Controllers
             // Fetch declarations with product names
             var declarations = await _context.Declarations
                 .Where(d => d.UserId == userId)
-                .SelectMany(d => _context.ProductPrice
+                .SelectMany(d => _context.Products
                     .Where(p => p.DeclarationId == d.DeclarationId)
                     .Select(p => new CalendarEventDto
                     {
@@ -270,7 +270,7 @@ namespace Customs_Management_System.Controllers
 
             var shipments = await _context.Shipments
                 .Where(s => s.Declaration.UserId == userId)
-                .SelectMany(s => _context.ProductPrice
+                .SelectMany(s => _context.Products
                     .Where(p => p.DeclarationId == s.DeclarationId)
                     .Select(p => new CalendarEventDto
                     {

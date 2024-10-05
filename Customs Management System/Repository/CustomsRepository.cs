@@ -513,7 +513,7 @@ namespace Customs_Management_System.Repository
                                  join r in _context.Roles on u.UserRoleId equals r.RoleId
                                  join p in _context.Payments on d.DeclarationId equals p.DeclarationId into paymentGroup
                                  from pg in paymentGroup.DefaultIfEmpty() // Left join with Payments
-                                 join pr in _context.ProductPrice on d.DeclarationId equals pr.DeclarationId into productGroup
+                                 join pr in _context.Products on d.DeclarationId equals pr.DeclarationId into productGroup
                                  from prg in productGroup.DefaultIfEmpty() // Left join with Products
                                  join pp in _context.ProductPrices on new { prg.Category, prg.ProductName } equals new { pp.Category, pp.ProductName } into priceGroup
                                  from ppg in priceGroup.DefaultIfEmpty() // Left join with ProductPrices
@@ -642,7 +642,7 @@ namespace Customs_Management_System.Repository
                     Status = p.Status,
                     DeclarationId = p.DeclarationId,
                     
-                    ProductName = _context.ProductPrice.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
+                    ProductName = _context.Products.FirstOrDefault(pr => pr.ProductId == p.ProductId).ProductName // Assuming ProductName is in a separate Products table
                 })
                 .ToListAsync();
         }
