@@ -1,4 +1,5 @@
 ﻿using Customs_Management_System.DbContexts;
+using Customs_Management_System.DBContexts.Models;
 using Customs_Management_System.DTOs;
 using Customs_Management_System.IRepository;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace Customs_Management_System.Repository
         private readonly string _storeId;
         private readonly string _storePassword;
         private readonly CMSDbContext _context;
+       
 
         public PaymentServiceRepository(IConfiguration configuration, HttpClient httpClient, CMSDbContext context)
         {
@@ -27,11 +29,29 @@ namespace Customs_Management_System.Repository
             _storeId = _configuration["SSLCommerz:StoreID"];
             _storePassword = _configuration["SSLCommerz:StorePassword"];
             _context = context;
+          
         }
 
         public async Task<string> InitiatePaymentAsync(int declarationId, string transactionId, string successUrl, string failUrl, string cancelUrl)
         {
             decimal totalAmount = await GetTotalAmountByDeclarationAsync(declarationId);
+
+            // Retrieve declaration along with user details
+            var declaration = await _context.Declarations
+                .Include(d => d.User)  // Ensure user data is loaded
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.DeclarationId == declarationId);
+
+            if (declaration == null)
+            {
+                throw new Exception("Declaration not found.");
+            }
+
+            // Extract customer information
+            string customerName = declaration.User?.UserName ?? "Default Name"; // Use UserName from Users table
+            string email = declaration.User?.Email ?? "customer@example.com"; // Use Email from Users table
+
+
 
             var postData = new Dictionary<string, string>
             {
@@ -43,8 +63,8 @@ namespace Customs_Management_System.Repository
                 { "success_url", successUrl },
                 { "fail_url", failUrl },
                 { "cancel_url", cancelUrl },
-                { "cus_name", "Customer Name" },
-                { "cus_email", "customer@example.com" },
+                { "cus_name", customerName },
+                { "cus_email", email },
                 { "cus_add1", "Address Line 1" },
                 { "cus_phone", "01700000000" }
             };
@@ -61,6 +81,7 @@ namespace Customs_Management_System.Repository
 
             throw new Exception("Failed to initiate payment.");
         }
+     
 
         public async Task<decimal> GetTotalAmountByDeclarationAsync(int declarationId)
         {

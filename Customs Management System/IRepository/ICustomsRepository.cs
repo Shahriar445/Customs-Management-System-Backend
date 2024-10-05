@@ -14,15 +14,10 @@ namespace Customs_Management_System.IRepository
         Task<List<MonitoringDto>> GetUserMonitoringsAsync (int userId);
         Task<IEnumerable<ProductPriceDto>> GetProductsByCategoryAsync(string category);
 
-
-
         //payment
         Task<IEnumerable<Declaration>> GetDeclarationsByUserIdAsync(int userId);
         Task AddPaymentAsync(Payment payment);
 
-
-
-        
 
         //dashboard 
 
