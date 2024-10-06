@@ -68,6 +68,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseDeveloperExceptionPage();  // Add this for development purposes
 
 app.UseCors("Open");
 

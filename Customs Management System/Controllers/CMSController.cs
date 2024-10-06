@@ -370,8 +370,8 @@ namespace Customs_Management_System.Controllers
         }
 
 
-        [HttpGet("/Exporter-monitoring")]
-        public async Task<ActionResult<ExporterMonitorDto>> GetMonitoringOverview()
+        [HttpGet("/Exporter-monitoring/{userId}")]
+        public async Task<ActionResult<ExporterMonitorDto>> GetMonitoringOverview(int userId)
         {
             try
             {
@@ -379,24 +379,23 @@ namespace Customs_Management_System.Controllers
                 int exporterRoleId = 3;
 
                 // Get the UserIds of all users with RoleId == 3
-                var exporterUserIds = await _context.Users
-                                                    .Where(u => u.UserRoleId == exporterRoleId)
-                                                    .Select(u => u.UserId)
-                                                    .ToListAsync();
+                var user = await _context.Users
+                                                     .Where(u => u.UserId == userId && u.UserRoleId == exporterRoleId)
+                                 .FirstOrDefaultAsync();
 
-                if (exporterUserIds == null || !exporterUserIds.Any())
+                if (user == null)
                 {
-                    return NotFound("No users found with the role of Exporter.");
+                    return NotFound("User not found or the user is not an Exporter.");
                 }
 
                 // Total processed shipments for Exporters
                 int processedShipments = await _context.Declarations
-                                                        .Where(d => d.IsActive == true && exporterUserIds.Contains(d.UserId))
+                                                        .Where(d => d.IsActive == true && d.UserId==userId)
                                                         .CountAsync();
 
                 // Total pending shipments for Exporters
                 int pendingShipments = await _context.Declarations
-                                                     .Where(d => d.IsActive == false && exporterUserIds.Contains(d.UserId))
+                                                     .Where(d => d.IsActive == false && d.UserId==userId)
                                                      .CountAsync();
 
                 // Define a custom status based on your criteria

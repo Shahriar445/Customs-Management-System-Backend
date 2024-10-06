@@ -125,12 +125,12 @@ namespace Customs_Management_System.Controllers
 
                 // Check for regular user login
                 var user = await _context.Users
-                    .Where(u => u.UserName == loginRequest.UserName)
+                    .Where(u => u.UserName == loginRequest.UserName || u.Email == loginRequest.UserName)
                     .FirstOrDefaultAsync();
 
                 if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
                 {
-                    _logger.LogWarning("Invalid login attempt for username: {UserName}", loginRequest.UserName);
+                    _logger.LogWarning("Invalid login attempt for username or email: {UserNameOrEmail}", loginRequest.UserName ?? loginRequest.Email);
                     return Unauthorized(new { message = "Invalid username or password." });
                 }
 
@@ -141,17 +141,17 @@ namespace Customs_Management_System.Controllers
 
                 if (role == null)
                 {
-                    _logger.LogError("Role not found for user: {UserName}", user.UserName);
+                    _logger.LogError("Role not found for user: {UserNameOrEmail}", user.UserName??user.Email);
                     return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Role not found." });
                 }
                 else if (!string.Equals(loginRequest.Role, role, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogWarning("Invalid role attempt for username: {UserName}. Expected role: {Role}, provided role: {ProvidedRole}", user.UserName, role, loginRequest.Role);
+                    _logger.LogWarning("Invalid role attempt for username or email: {UserNameOrEmail}. Expected role: {Role}, provided role: {ProvidedRole}", user.UserName ?? user.Email, role, loginRequest.Role);
                     return Unauthorized(new { message = "Role does not match. Please check the role provided." });
                 }
                 else if (!user.IsActive)
                 {
-                    _logger.LogWarning("Inactive user login attempt for username: {UserName}", loginRequest.UserName);
+                    _logger.LogWarning("Inactive user login attempt for username or email: {UserNameOrEmail}", loginRequest.UserName ?? loginRequest.Email);
                     return Unauthorized(new { message = "Your account is not active. Please contact the admin." });
                 }
                 // Increment login count
@@ -166,7 +166,7 @@ namespace Customs_Management_System.Controllers
                     Token = GenerateJwtToken(user.UserName, role) // Generate token for regular user
                 };
 
-                _logger.LogInformation("User logged in successfully: {UserName}", user.UserName);
+                _logger.LogInformation("User logged in successfully: {UserNameOrEmail}", user.UserName ?? user.Email);
                 return Ok(response);
             }
             catch (Exception ex)

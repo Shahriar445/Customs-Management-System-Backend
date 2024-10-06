@@ -37,7 +37,12 @@ public class PaymentController : ControllerBase
                 $"?transactionId={Uri.EscapeDataString(transactionId)}" +
                 $"&declarationId={request.DeclarationId}" +
                 $"&returnUrl={Uri.EscapeDataString(request.ReturnUrl)}";
-            var failUrl = $"{Request.Scheme}://{Request.Host}/api/Payment/fail";
+
+            var failUrl = $"{Request.Scheme}://{Request.Host}/api/Payment/fail" +
+                $"?transactionId={Uri.EscapeDataString(transactionId)}" +
+                 $"&declarationId={request.DeclarationId}" +
+                $"&returnUrl={Uri.EscapeDataString(request.FailReturnUrl)}"; 
+
             var cancelUrl = $"{Request.Scheme}://{Request.Host}/api/payment/cancel";
 
             var paymentUrl = await _paymentService.InitiatePaymentAsync(request.DeclarationId, transactionId, successUrl, failUrl, cancelUrl);
@@ -75,7 +80,7 @@ public class PaymentController : ControllerBase
                 Amount = await _paymentService.GetTotalAmountByDeclarationAsync(declarationId),
                 Date = DateTime.UtcNow,
                 Status = "Completed",
-                ProductId=product.ProductId,
+                ProductId=product?.ProductId,
                 TransactionId = transactionId,
                 PaymentMethod = "SSLCommerz",
                 Currency = "USD",
@@ -95,8 +100,8 @@ public class PaymentController : ControllerBase
     }
 
 
-    [HttpGet("fail")]
-    public IActionResult PaymentFail([FromQuery] string transactionId)
+    [HttpPost("fail")]
+    public IActionResult PaymentFail([FromQuery] string transactionId, [FromQuery] string returnUrl)
     {
         if (string.IsNullOrEmpty(transactionId))
         {
@@ -106,7 +111,7 @@ public class PaymentController : ControllerBase
         try
         {
             // Handle failure logic here
-            return Ok(new { Message = "Payment failed." });
+            return Redirect(returnUrl);
         }
         catch (Exception ex)
         {
@@ -139,4 +144,6 @@ public class PaymentRequest
 {
     public int DeclarationId { get; set; }
     public string ReturnUrl {  get; set; }
+    public string FailReturnUrl { get; set; } // Add this line
+
 }
