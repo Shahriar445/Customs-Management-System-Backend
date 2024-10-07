@@ -880,8 +880,11 @@ namespace Customs_Management_System.Controllers
             var user = await _context.Users.FindAsync(shipment.Declaration.UserId);
             if (user != null)
             {
-                string subject = "Your Shipment Reached Successfully";
-                string body = $"Dear {user.UserName},\n\nYour shipment with ID {shipmentId} has been completed shiped successfully.Collect your Products.\\n\nBest regards,\nCustoms Management System";
+                string subject = "Shipment ID {shipmentId} Successfully Shipped – Collection Ready";
+                string body = $"Dear {user.UserName},\n\n" +
+              $"We are pleased to inform you that your shipment with ID {shipmentId}, departing from {shipment.PortOfDeparture}, has been successfully shipped. You may now collect your products." +
+              "\n\nBest regards,\nCustoms Management System";
+
 
                 await _emailService.SendEmailAsync(user.Email, subject, body);  
             }
