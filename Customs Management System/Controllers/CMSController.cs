@@ -880,10 +880,23 @@ namespace Customs_Management_System.Controllers
             var user = await _context.Users.FindAsync(shipment.Declaration.UserId);
             if (user != null)
             {
-                string subject = "Shipment ID {shipmentId} Successfully Shipped – Collection Ready";
-                string body = $"Dear {user.UserName},\n\n" +
-              $"We are pleased to inform you that your shipment with ID {shipmentId}, departing from {shipment.PortOfDeparture}, has been successfully shipped. You may now collect your products." +
-              "\n\nBest regards,\nCustoms Management System";
+                string subject = $"Shipment ID {shipmentId} Successfully Shipped – Collection Ready";
+                string body = $"Dear {user.UserName},<br><br>" +
+                                $"We are pleased to inform you that your shipment with ID {shipmentId}, departing from {shipment.PortOfDeparture}, has been successfully shipped. You may now collect your products." +
+                                 "<br><br>Best regards,<br>Customs Management System";
+
+                var sentAt = DateTime.UtcNow.AddHours(6); 
+
+                // Save email to the database
+                var userEmail = new UserEmail
+                {
+                    UserId = user.UserId,
+                    Subject = subject,
+                    Body = body,  // Save the same body as used in the email
+                    SentAt= sentAt
+                };
+                _context.UserEmails.Add(userEmail);
+                await _context.SaveChangesAsync();
 
 
                 await _emailService.SendEmailAsync(user.Email, subject, body);  
@@ -892,6 +905,45 @@ namespace Customs_Management_System.Controllers
 
             return Ok("Shipment Completed successfully.");
         }
+        [HttpGet("GetUserEmails/{userId}")]
+        public async Task<IActionResult> GetUserEmails(int userId)
+        {
+            var emails = await _context.UserEmails
+                .Where(e => e.UserId == userId)
+                .OrderByDescending(e => e.SentAt)
+                .ToListAsync();
+
+            return Ok(emails);
+        }
+
+        [HttpGet("/customsOfficerMonitor")]
+        public async Task<IActionResult> GetCustomsOfficerMonitorData()
+        {
+            var monitoringData = await _context.Monitorings
+                .Join(_context.Declarations,
+                    m => m.DeclarationId,
+                    d => d.DeclarationId,
+                    (m, d) => new { m, d })
+                .Join(_context.Products,
+                    md => md.d.DeclarationId,
+                    p => p.DeclarationId,
+                    (md, p) => new MonitoringResponseDto
+                    {
+                        Username = md.d.User.UserName, 
+                        ProductName = p.ProductName,
+                        DeclarationId = md.d.DeclarationId,
+                        MonitoringId = md.m.MonitoringId,
+                        Status = md.m.Status,
+                        Quantity = p.Quantity,
+                        TotalPrice = (decimal)p.TotalPrice
+                    })
+                .ToListAsync();
+
+            return Ok(monitoringData);
+        }
+
+
+
 
         // POST: api/CustomsOfficer/RejectShipment/{shipmentId}
         [HttpPost("RejectShipment/{shipmentId}")]

@@ -38,6 +38,8 @@ public partial class CMSDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<UserEmail> UserEmails { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Data Source=DESKTOP-LCOF2LA; Initial Catalog=CMS;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
@@ -258,6 +260,14 @@ public partial class CMSDbContext : DbContext
                 .HasForeignKey(d => d.UserRoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserRoleId");
+        });
+
+        modelBuilder.Entity<UserEmail>(entity =>
+        {
+            entity.HasKey(e => e.EmailId).HasName("PK__UserEmai__7ED91ACF1A732C89");
+
+            entity.Property(e => e.SentAt).HasColumnType("datetime");
+            entity.Property(e => e.Subject).HasMaxLength(255);
         });
 
         OnModelCreatingPartial(modelBuilder);

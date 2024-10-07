@@ -18,6 +18,7 @@ namespace Customs_Management_System.Services
             email.From.Add(MailboxAddress.Parse(_configuration["EmailSettings:SenderEmail"]));
             email.To.Add(MailboxAddress.Parse(recipientEmail));
             email.Subject=subject;
+       
 
             var builder = new BodyBuilder { HtmlBody = body };
             email.Body =builder.ToMessageBody();
