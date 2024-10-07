@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using PdfSharp.Pdf;
 using PdfSharp.Drawing;
 using Microsoft.ML;
+using Customs_Management_System.Services;
 
 namespace Customs_Management_System.Controllers
 {
@@ -28,12 +29,13 @@ namespace Customs_Management_System.Controllers
         private readonly CMSDbContext _context;
         private static ICustomsRepository _customsRepo;
         private readonly ILogger<CMSController> _logger;
-
-        public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo, CMSDbContext context)
+        private readonly EmailService _emailService;
+        public CMSController(ILogger<CMSController> logger, ICustomsRepository customsRepo, CMSDbContext context, EmailService emailService)
         {
             _logger=logger;
             _customsRepo=customsRepo;
             _context=context;
+            _emailService=emailService;
 
         }
         //----------------------------------------------Importer Api  --------------------------------------
@@ -317,70 +319,19 @@ namespace Customs_Management_System.Controllers
         }
 
 
-        [HttpGet("/Importer-monitoring")]
-        public async Task<ActionResult<ExporterMonitorDto>> GetMonitorOverview()
-        {
-            try
-            {
-                // Role ID for Importer
-                int exporterRoleId = 2;
-
-                var exporterUserIds = await _context.Users
-                                                    .Where(u => u.UserRoleId == exporterRoleId)
-                                                    .Select(u => u.UserId)
-                                                    .ToListAsync();
-
-                if (exporterUserIds == null || !exporterUserIds.Any())
-                {
-                    return NotFound("No users found with the role of Exporter.");
-                }
-
-                // Total processed shipments for Exporters
-                int processedShipments = await _context.Declarations
-                                                        .Where(d => d.IsActive == true && exporterUserIds.Contains(d.UserId))
-                                                        .CountAsync();
-
-                // Total pending shipments for Exporters
-                int pendingShipments = await _context.Declarations
-                                                     .Where(d => d.IsActive == false && exporterUserIds.Contains(d.UserId))
-                                                     .CountAsync();
-
-                // Define a custom status based on your criteria
-                string currentStatus = processedShipments > 0 ? "Operational" : "Not Operational";
-
-                // Example clearance rate calculation
-                double clearanceRate = (processedShipments + pendingShipments) > 0
-                    ? (double)processedShipments / (processedShipments + pendingShipments) * 100
-                    : 0.0;
-
-                var monitoringData = new ExporterMonitorDto
-                {
-                    ShipmentsProcessed = processedShipments,
-                    ShipmentPending = pendingShipments,
-                    CurrentStatus = currentStatus,
-                    CustomsClearanceRate = clearanceRate
-                };
-
-                return Ok(monitoringData);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request.");
-            }
-        }
+      
 
 
-        [HttpGet("/Exporter-monitoring/{userId}")]
+        [HttpGet("/monitoring/{userId}")]
         public async Task<ActionResult<ExporterMonitorDto>> GetMonitoringOverview(int userId)
         {
             try
             {
-                // Role ID for Exporters
-                int exporterRoleId = 3;
+               
 
-                // Get the UserIds of all users with RoleId == 3
+                
                 var user = await _context.Users
-                                                     .Where(u => u.UserId == userId && u.UserRoleId == exporterRoleId)
+                                                     .Where(u => u.UserId == userId )
                                  .FirstOrDefaultAsync();
 
                 if (user == null)
@@ -923,6 +874,18 @@ namespace Customs_Management_System.Controllers
             shipment.Declaration.IsActive=true;
             monitoring.Status = shipment.Status = "Completed";
             await _context.SaveChangesAsync();
+
+
+
+            var user = await _context.Users.FindAsync(shipment.Declaration.UserId);
+            if (user != null)
+            {
+                string subject = "Your Shipment Reached Successfully";
+                string body = $"Dear {user.UserName},\n\nYour shipment with ID {shipmentId} has been completed shiped successfully.Collect your Products.\\n\nBest regards,\nCustoms Management System";
+
+                await _emailService.SendEmailAsync(user.Email, subject, body);  
+            }
+
 
             return Ok("Shipment Completed successfully.");
         }

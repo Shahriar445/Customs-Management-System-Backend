@@ -1,5 +1,6 @@
 using Customs_Management_System.DbContexts;
 using Customs_Management_System.DependencyContainer;
+using Customs_Management_System.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -10,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Register DbContext
 builder.Services.AddDbContext<CMSDbContext>();
-
+builder.Services.AddScoped<EmailService>();
 
 // Configure JWT Bearer Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
