@@ -25,6 +25,8 @@ public partial class User
 
     public virtual ICollection<Declaration> Declarations { get; set; } = new List<Declaration>();
 
+    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public virtual ICollection<Report> Reports { get; set; } = new List<Report>();

@@ -18,6 +18,8 @@ public partial class CMSDbContext : DbContext
 
     public virtual DbSet<Declaration> Declarations { get; set; }
 
+    public virtual DbSet<Invoice> Invoices { get; set; }
+
     public virtual DbSet<Monitoring> Monitorings { get; set; }
 
     public virtual DbSet<Payment> Payments { get; set; }
@@ -59,6 +61,27 @@ public partial class CMSDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserId_Declarations");
+        });
+
+        modelBuilder.Entity<Invoice>(entity =>
+        {
+            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoices__D796AAB5DA8BE8CE");
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Currency)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.InvoiceDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.PaymentMethod)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.User).WithMany(p => p.Invoices)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Invoices__UserId__3D2915A8");
         });
 
         modelBuilder.Entity<Monitoring>(entity =>

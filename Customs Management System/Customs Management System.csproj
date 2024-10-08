@@ -34,7 +34,6 @@
   <ItemGroup>
     <Folder Include="Middlewares\" />
     <Folder Include="SQL\" />
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

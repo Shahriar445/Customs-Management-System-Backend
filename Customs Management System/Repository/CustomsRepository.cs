@@ -557,7 +557,7 @@ namespace Customs_Management_System.Repository
                 {
                     Alignment = Element.ALIGN_CENTER,
                     SpacingAfter = 20f,
-                    Font = metadataFont // Apply font to the metadata paragraph
+                    Font = metadataFont 
                 };
                 metadataParagraph.Add($"Created by: {createdBy}\n");
                 metadataParagraph.Add($"Date: {reportDate.ToString("MMMM d, yyyy HH:mm:ss")}");
