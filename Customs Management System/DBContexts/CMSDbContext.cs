@@ -229,6 +229,7 @@ public partial class CMSDbContext : DbContext
             entity.ToTable("Shipment");
 
             entity.Property(e => e.ArrivalDate).HasColumnType("datetime");
+            entity.Property(e => e.CompletedDate).HasColumnType("datetime");
             entity.Property(e => e.DepartureDate).HasColumnType("datetime");
             entity.Property(e => e.MethodOfShipment)
                 .HasMaxLength(100)

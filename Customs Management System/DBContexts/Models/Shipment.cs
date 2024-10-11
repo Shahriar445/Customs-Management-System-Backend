@@ -21,5 +21,7 @@ public partial class Shipment
 
     public string? Status { get; set; }
 
+    public DateTime? CompletedDate { get; set; }
+
     public virtual Declaration Declaration { get; set; } = null!;
 }

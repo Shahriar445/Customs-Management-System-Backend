@@ -755,7 +755,7 @@ namespace Customs_Management_System.Controllers
         [HttpGet("GetRejectedShipments")]
         public async Task<IActionResult> GetRejectedShipments()
         {
-            var rejectedShipments = _context.Shipments
+            var rejectedShipments = _context.Shipments 
                 .Where(s => s.Status == "Rejected")
                 .Select(s => new
                 {
@@ -766,6 +766,7 @@ namespace Customs_Management_System.Controllers
                     s.PortOfDestination,
                     s.DepartureDate,
                     s.ArrivalDate,
+                    ShipmentStatus= s.Status,
                     paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
                 })
                 .ToList();
@@ -777,7 +778,7 @@ namespace Customs_Management_System.Controllers
         [HttpGet("GetCompleteShipments")]
         public async Task<IActionResult> GetCompleteShipments()
         {
-            var shipments = from s in _context.Shipments
+            var shipments = from s in _context.Shipments where s.Status=="Completed"
                             join d in _context.Declarations on s.DeclarationId equals d.DeclarationId
                             join u in _context.Users on d.UserId equals u.UserId
                             join r in _context.Roles on u.UserRoleId equals r.RoleId
@@ -796,6 +797,7 @@ namespace Customs_Management_System.Controllers
                                 UserName = u.UserName,
                                 UserRole = r.RoleName,
                                 DeclarationStatus = d.Status,
+                                CompletedDate = s.CompletedDate != null ? s.CompletedDate.Value.ToString("yyyy-MM-dd") : null,
                                 paymentStatus = s.Declaration.IsPayment == true ? "Completed" : "Not Payment"
                             };
 
@@ -870,6 +872,7 @@ namespace Customs_Management_System.Controllers
             }
 
             shipment.Status = "Completed";
+            shipment.CompletedDate = DateTime.Now;
             shipment.Declaration.Status = "Completed";
             shipment.Declaration.IsActive=true;
             monitoring.Status = shipment.Status = "Completed";
