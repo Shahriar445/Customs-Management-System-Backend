@@ -568,10 +568,10 @@ namespace Customs_Management_System.Repository
                 {
                     WidthPercentage = 100
                 };
-                table.SetWidths(new float[] { 8, 50, 15, 15, 10, 15, 12, 12, 15 }); // Adjust column widths
+                table.SetWidths(new float[] { 8, 15, 15, 15, 10, 15, 12, 12, 15 }); // Adjust column widths
 
                 // Add table headers
-                AddCellToHeader(table, "Declaration ID");
+                AddCellToHeader(table, "ID");
                 AddCellToHeader(table, "User Name");
                 AddCellToHeader(table, "Role");
                 AddCellToHeader(table, "Declaration Date");
