@@ -844,6 +844,7 @@ namespace Customs_Management_System.Controllers
             return Ok("Shipment approved successfully.");
         }
         [HttpPost("CompletedShipment/{shipmentId}")]
+
         public async Task<IActionResult> Completed(int shipmentId)
         {
             var shipment = await _context.Shipments
@@ -865,49 +866,76 @@ namespace Customs_Management_System.Controllers
             }
 
             var monitoring = await _context.Monitorings
-                .FirstOrDefaultAsync(m => m.DeclarationId==shipment.DeclarationId);
-            if (monitoring==null)
+                .FirstOrDefaultAsync(m => m.DeclarationId == shipment.DeclarationId);
+            if (monitoring == null)
             {
-                return NotFound("Monitoring record not found for this declaration");
+                return NotFound("Monitoring record not found for this declaration.");
             }
 
+            var departureDate = shipment.DepartureDate;
             shipment.Status = "Completed";
             shipment.CompletedDate = DateTime.Now;
             shipment.Declaration.Status = "Completed";
-            shipment.Declaration.IsActive=true;
+            shipment.Declaration.IsActive = true;
             monitoring.Status = shipment.Status = "Completed";
             await _context.SaveChangesAsync();
-
-
 
             var user = await _context.Users.FindAsync(shipment.Declaration.UserId);
             if (user != null)
             {
+                // Check if CompletedDate is later than DepartureDate
+                if (shipment.CompletedDate > departureDate)
+                {
+                    string apologySubject = $"Apology for the Delay – Shipment ID {shipmentId}";
+                    string apologyBody = $"Dear {user.UserName},<br><br>" +
+                                         $"We are very sorry to inform you that your shipment with ID {shipmentId}, which was scheduled to depart from {shipment.PortOfDeparture}, has been delayed due to some unforeseen issues. " +
+                                         "We sincerely apologize for the inconvenience this may have caused." +
+                                         "<br><br>Best regards,<br>Customs Management System";
+
+                    var sentAt = DateTime.UtcNow.AddHours(6);
+
+                    // Save apology email to the database
+                    var apologyEmail = new UserEmail
+                    {
+                        UserId = user.UserId,
+                        Subject = apologySubject,
+                        Body = apologyBody,
+                        SentAt = sentAt
+                    };
+                    _context.UserEmails.Add(apologyEmail);
+                    await _context.SaveChangesAsync();
+
+                    // Send apology email
+                    await _emailService.SendEmailAsync(user.Email, apologySubject, apologyBody);
+                }
+
+                // Regular shipment completed email
                 string subject = $"Shipment ID {shipmentId} Successfully Shipped – Collection Ready";
                 string body = $"Dear {user.UserName},<br><br>" +
-                                $"We are pleased to inform you that your shipment with ID {shipmentId}, departing from {shipment.PortOfDeparture}, has been successfully shipped. You may now collect your products." +
-                                 "<br><br>Best regards,<br>Customs Management System";
+                              $"We are pleased to inform you that your shipment with ID {shipmentId}, departing from {shipment.PortOfDeparture}, has been successfully shipped. You may now collect your products." +
+                              "<br><br>Best regards,<br>Customs Management System";
 
-                var sentAt = DateTime.UtcNow.AddHours(6); 
+                var completionSentAt = DateTime.UtcNow.AddHours(6);
 
-                // Save email to the database
+                // Save shipment completion email to the database
                 var userEmail = new UserEmail
                 {
                     UserId = user.UserId,
                     Subject = subject,
-                    Body = body,  // Save the same body as used in the email
-                    SentAt= sentAt
+                    Body = body,
+                    SentAt = completionSentAt
                 };
                 _context.UserEmails.Add(userEmail);
                 await _context.SaveChangesAsync();
 
-
-                await _emailService.SendEmailAsync(user.Email, subject, body);  
+                // Send completion email
+                await _emailService.SendEmailAsync(user.Email, subject, body);
             }
-
 
             return Ok("Shipment Completed successfully.");
         }
+
+
         [HttpGet("GetUserEmails/{userId}")]
         public async Task<IActionResult> GetUserEmails(int userId)
         {
